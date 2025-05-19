@@ -41,7 +41,7 @@ export default function SignIn() {
           </View>
           <TouchableOpacity >
             <Text 
-              style={Styles.buttonRegister}
+              style={Styles.buttonLineRegister}
               onPress={() => navigation.navigate("Register")}
             >
                Cadastra-se{" "}

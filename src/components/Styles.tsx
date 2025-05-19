@@ -52,6 +52,7 @@ export default StyleSheet.create({
   textButton: {
     color: colors.white,
     fontWeight: "bold",
+    fontSize: 16
   },
   Header: {
     marginTop: 20,
@@ -78,10 +79,19 @@ export default StyleSheet.create({
     marginBottom: "8%",
     paddingStart: "5%",
     paddingEnd: "5%",
+    marginHorizontal: 10,
     backgroundColor: colors.white,
-    borderTopLeftRadius: 25,
-    borderTopRightRadius: 25,
+    borderRadius: 25,
     flex: 1,
+  },
+  Header3: {
+    backgroundColor: "white",
+    paddingStart: "5%",
+    paddingEnd: "5%",
+    borderRadius: 25,
+    marginHorizontal: 20,
+    marginBottom: 0,
+    marginTop: "12%"
   },
   email: {
     color: colors.textPrimary,
@@ -99,7 +109,7 @@ export default StyleSheet.create({
     color: colors.textSecondary,
     paddingRight: 5
   },
-  buttonRegister: {
+  buttonLineRegister: {
     color: colors.blue, 
   },
   buttonLogin: {
@@ -111,10 +121,22 @@ export default StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  buttonRegister: {
+    backgroundColor: colors.primary,
+    width: "60%",
+    borderRadius: 10,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
   lineRegister: {
     flex: 1,
     flexDirection: "row",
     justifyContent: "center",
     padding: 10,
+  },
+  footerRegister: {
+    paddingVertical: 20,
+    alignItems: "center",
+    justifyContent: "center"
   }
 });
