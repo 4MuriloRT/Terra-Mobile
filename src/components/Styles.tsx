@@ -97,11 +97,10 @@ export default StyleSheet.create({
   },
   registerText: {
     color: colors.textSecondary,
+    paddingRight: 5
   },
-
   buttonRegister: {
-    marginTop: 14,
-    alignSelf: "center",
+    color: colors.blue, 
   },
   buttonLogin: {
     backgroundColor: colors.primary,
@@ -112,4 +111,10 @@ export default StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
+  lineRegister: {
+    flex: 1,
+    flexDirection: "row",
+    justifyContent: "center",
+    padding: 10,
+  }
 });

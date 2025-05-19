@@ -7,4 +7,5 @@ export const colors = {
   textSecondary: "#8D6E63", // Marrom suave
   accent: "#FBC02D", // Amarelo ouro
   white: "#FFFFFF",
+  blue: "#0000FF",
 };

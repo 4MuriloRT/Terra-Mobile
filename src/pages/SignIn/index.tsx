@@ -2,8 +2,15 @@ import React from "react";
 import { View, Text, TextInput, TouchableOpacity } from "react-native";
 import * as Animatable from "react-native-animatable";
 import Styles from "../../components/Styles";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "../../screens/Types";
+
+type NavigationProp = StackNavigationProp<RootStackParamList, "Register">;
 
 export default function SignIn() {
+  const navigation = useNavigation<NavigationProp>();
+  
   return (
     <View style={Styles.container}>
       <Animatable.View animation="fadeInLeft" delay={600} style={Styles.Header}>
@@ -26,11 +33,22 @@ export default function SignIn() {
           <Text style={Styles.textButton}>Acessar</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={Styles.buttonRegister}>
-          <Text style={Styles.registerText}>
-            Não possui uma conta? Cadastra-se{" "}
-          </Text>
-        </TouchableOpacity>
+        <View style={Styles.lineRegister}>
+          <View>
+            <Text style={Styles.registerText}>
+              Não possui uma conta?
+            </Text>
+          </View>
+          <TouchableOpacity >
+            <Text 
+              style={Styles.buttonRegister}
+              onPress={() => navigation.navigate("Register")}
+            >
+               Cadastra-se{" "}
+            </Text>
+          </TouchableOpacity>
+        </View>
+        
       </Animatable.View>
     </View>
   );
