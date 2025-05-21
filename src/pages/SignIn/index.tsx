@@ -6,11 +6,11 @@ import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../screens/Types";
 
-type NavigationProp = StackNavigationProp<RootStackParamList, "Register">;
+type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 export default function SignIn() {
   const navigation = useNavigation<NavigationProp>();
-  
+
   return (
     <View style={Styles.container}>
       <Animatable.View animation="fadeInLeft" delay={600} style={Styles.Header}>
@@ -29,26 +29,26 @@ export default function SignIn() {
           secureTextEntry={true}
           style={Styles.input}
         ></TextInput>
-        <TouchableOpacity style={Styles.buttonLogin}>
+        <TouchableOpacity
+          style={Styles.buttonLogin}
+          onPress={() => navigation.navigate("Dashboard")}
+        >
           <Text style={Styles.textButton}>Acessar</Text>
         </TouchableOpacity>
 
         <View style={Styles.lineRegister}>
           <View>
-            <Text style={Styles.registerText}>
-              Não possui uma conta?
-            </Text>
+            <Text style={Styles.registerText}>Não possui uma conta?</Text>
           </View>
-          <TouchableOpacity >
-            <Text 
+          <TouchableOpacity>
+            <Text
               style={Styles.buttonLineRegister}
               onPress={() => navigation.navigate("Register")}
             >
-               Cadastra-se{" "}
+              Cadastra-se{" "}
             </Text>
           </TouchableOpacity>
         </View>
-        
       </Animatable.View>
     </View>
   );

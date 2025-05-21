@@ -1,5 +1,5 @@
 import React from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform } from "react-native";
 import * as Animatable from "react-native-animatable";
 import Styles from "../../components/Styles";
 import { StackNavigationProp } from "@react-navigation/stack";
