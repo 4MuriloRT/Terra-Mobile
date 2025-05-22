@@ -6,7 +6,8 @@ import Welcome from "../pages/Welcome";
 import SignIn from "../pages/SignIn";
 import Register from "../pages/Register";
 import TabRoutes from "../pages/TabNavigator/TabRoutes";
-import { colors } from "../components/Colors"; // ajuste o caminho se estiver diferente
+import { colors } from "../components/Colors";
+import DashboardScreen from "../pages/Dashboard/DashboardScreen";
 
 const Stack = createStackNavigator();
 
@@ -31,19 +32,23 @@ export default function Routes() {
       <Stack.Screen
         name="SignIn"
         component={SignIn}
-        options={{ title: "Login" }} // usa o header padrão
+        options={{ title: "Login" }}
       />
       <Stack.Screen
         name="Register"
         component={Register}
-        options={{ title: "Cadastro" }} // usa o header padrão
+        options={{ title: "Cadastro" }}
       />
       <Stack.Screen
-        name="Dashboard"
+        name="DashboardTabs"
         component={TabRoutes}
         options={{ headerShown: false }}
       />
-    
+      <Stack.Screen
+        name="DashboardScreen"
+        component={DashboardScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }
