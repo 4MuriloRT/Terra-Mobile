@@ -27,7 +27,7 @@ export default StyleSheet.create({
   button: {
     flex: 2,
     position: "absolute",
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     borderRadius: 50,
     paddingVertical: 8,
     width: "60%",
@@ -39,7 +39,7 @@ export default StyleSheet.create({
   back: {
     flex: 1.5,
     justifyContent: "flex-end",
-    backgroundColor: colors.background,
+    backgroundColor: colors.primary,
   },
   back2: {
     flex: 1.5,
@@ -55,7 +55,7 @@ export default StyleSheet.create({
     fontSize: 16
   },
   Header: {
-    marginTop: 20,
+    marginTop: "5%",
   },
   message: {
     fontSize: 24,
@@ -63,19 +63,19 @@ export default StyleSheet.create({
     color: colors.textPrimary,
   },
   container: {
-    flex: 2,
-    backgroundColor: colors.background,
+    flex: 1,
+    backgroundColor: colors.primary,
     justifyContent: "center",
   },
   textLogin: {
-    color: colors.textPrimary,
+    color: colors.white,
     fontSize: 28,
     fontWeight: "bold",
     marginTop: 100,
     paddingStart: "5%",
   },
   Header2: {
-    marginTop: "15%",
+    marginTop: "14%",
     marginBottom: "8%",
     paddingStart: "5%",
     paddingEnd: "5%",
@@ -113,7 +113,7 @@ export default StyleSheet.create({
     color: colors.blue, 
   },
   buttonLogin: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     width: "100%",
     borderRadius: 4,
     paddingVertical: 8,
@@ -122,7 +122,7 @@ export default StyleSheet.create({
     alignItems: "center",
   },
   buttonRegister: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.secondary,
     width: "60%",
     borderRadius: 10,
     paddingVertical: 12,

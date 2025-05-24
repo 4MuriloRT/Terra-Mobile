@@ -5,13 +5,13 @@ import { FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 export const DashboardHeader = () => {
   return (
     <View style={styles.container}>
-      <FontAwesome5 name="leaf" size={24} color="black" />
+      <FontAwesome5 name="leaf" size={24} color="white" />
 
       
       <View style={styles.rightContainer}>
         <View style={styles.textContainer}>
           <View style={styles.nameRow}>
-            <MaterialCommunityIcons name="bell" size={18} color="black" />
+            <MaterialCommunityIcons name="bell" size={18} color="white" />
             <Text style={styles.name}> Joaquin Silva </Text>
           </View>
           <Text style={styles.role}>proprietário</Text>
@@ -19,7 +19,7 @@ export const DashboardHeader = () => {
         <FontAwesome5
           name="user-circle"
           size={40}
-          color=""
+          color="white"
           style={styles.avatar}
         />
       </View>
@@ -30,11 +30,11 @@ export const DashboardHeader = () => {
 const styles = StyleSheet.create({
   container: {
     marginTop: 50,
-    backgroundColor: "#CED5C0",
+    backgroundColor: "#263c20",
     paddingVertical: 20,
     paddingHorizontal: 25,
     borderBottomWidth: 2,
-    borderBottomColor: "#5B7C48",
+    borderBottomColor: "#ffff",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     flexDirection: "row",
@@ -56,11 +56,11 @@ const styles = StyleSheet.create({
   name: {
     fontWeight: "bold",
     fontSize: 16,
-    color: "#1F2937",
+    color: "#fff",
   },
   role: {
     fontSize: 14,
-    color: "#374151",
+    color: "#fff",
   },
   avatar: {
     marginLeft: 8,

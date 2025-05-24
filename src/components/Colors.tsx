@@ -1,11 +1,11 @@
 // components/colors.ts
 export const colors = {
-  primary: "#2E7D32", // Verde escuro
-  secondary: "#A5D6A7", // Verde claro
-  background: "#CBD4C2", // Cinza muito claro
-  textPrimary: "#2E7D32",
-  textSecondary: "#8D6E63", // Marrom suave
-  accent: "#FBC02D", // Amarelo ouro
+  primary: "#263c20", // Verde escuro (fundo)
+  secondary: "#4b7940", // Verde musgo claro (acentos)
+  background: "#F1FAEE", // Creme claro (contraste suave)
+  textPrimary: "#1B4332", // Verde escuro para textos principais
+  textSecondary: "#6C757D", // Marrom acinzentado para textos secundários
+  accent: "#D4A373", // Dourado antigo (detalhes e botões)
   white: "#FFFFFF",
-  blue: "#0000FF",
+  blue: "#0000FF", // (mantido caso esteja em uso)
 };

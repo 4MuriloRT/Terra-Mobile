@@ -29,7 +29,7 @@ export default function DashboardScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#CED5C0",
+    backgroundColor: "#263c20",
   },
   content: {
     paddingBottom: 100,

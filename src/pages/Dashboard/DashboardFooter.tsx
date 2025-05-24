@@ -5,10 +5,10 @@ import { FontAwesome5 } from "@expo/vector-icons";
 export const DashboardFooter = () => {
   return (
     <View style={styles.footer}>
-      <FontAwesome5 name="seedling" size={28} color="#4B7F52" />
-      <FontAwesome5 name="home" size={28} color="#4B7F52" />
-      <FontAwesome5 name="tractor" size={28} color="#4B7F52" />
-      <FontAwesome5 name="users" size={28} color="#4B7F52" />
+      <FontAwesome5 name="seedling" size={28} color="#131e10" />
+      <FontAwesome5 name="home" size={28} color="#131e10" />
+      <FontAwesome5 name="tractor" size={28} color="#131e10" />
+      <FontAwesome5 name="users" size={28} color="#131e10" />
     </View>
   );
 };
@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     paddingVertical: 32,
-    backgroundColor: "#CED5C0",
+    backgroundColor: "#fff",    
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },

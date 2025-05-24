@@ -1,7 +1,7 @@
 import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons"; // ou de onde você usa os ícones
-import Dashboard from "../Dashboard/Dashboard"; // substitua se o nome do seu Dashboard for diferente
+import Dashboard from "../Dashboard/DashboardScreen"; // substitua se o nome do seu Dashboard for diferente
 
 const Tab = createBottomTabNavigator();
 
