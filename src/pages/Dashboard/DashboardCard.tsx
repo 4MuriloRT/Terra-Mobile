@@ -1,33 +1,43 @@
-import React from "react";
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
-import { FontAwesome } from "@expo/vector-icons";
+import React from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
 
 interface Props {
   title: string;
-  onPress: () => void;
+  children?: React.ReactNode;
+  loading?: boolean;
+  onPress?: () => void;
+  flex?: number; // Prop para controlar o tamanho do card
 }
 
-export const DashboardCard: React.FC<Props> = ({ title, onPress }) => {
+export const DashboardCard: React.FC<Props> = ({ title, children, loading, onPress, flex = 1 }) => {
   return (
-    <TouchableOpacity style={styles.card} onPress={onPress}>
-      
+    <TouchableOpacity style={[styles.card, { flex }]} onPress={onPress} disabled={!onPress}>
+      <Text style={styles.title}>{title}</Text>
+      <View style={styles.content}>
+        {loading ? <ActivityIndicator color="#1B4332" /> : children}
+      </View>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: "row",
-    backgroundColor: "#E0",
+    backgroundColor: '#FFFFFF',
     padding: 16,
-    marginVertical: 8,
-    marginHorizontal: 12,
     borderRadius: 8,
-    justifyContent: "space-between",
-    alignItems: "center",
+    elevation: 3,
+    marginVertical: 8,
   },
-  text: {
-    fontWeight: "bold",
-    fontSize: 16,
+  title: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#6C757D',
+    marginBottom: 8,
+    textTransform: 'uppercase',
+  },
+  content: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });

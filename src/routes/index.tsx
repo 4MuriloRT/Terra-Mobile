@@ -1,6 +1,9 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-import { NavigationContainer } from "@react-navigation/native";
+
+// Removi a importação desnecessária do NavigationContainer
+// Não é necessário importar 'View' aqui, o erro provavelmente está em outro lugar
+// mas vamos garantir que a estrutura de rotas esteja limpa.
 
 import Welcome from "../pages/Welcome";
 import SignIn from "../pages/SignIn";
@@ -39,6 +42,7 @@ export default function Routes() {
         component={Register}
         options={{ title: "Cadastro" }}
       />
+      
       <Stack.Screen
         name="DashboardTabs"
         component={TabRoutes}
