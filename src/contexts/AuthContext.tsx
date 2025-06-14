@@ -1,6 +1,6 @@
-import React, { createContext, useState, useContext, ReactNode } from 'react';
+import React, { createContext, useState, useContext, ReactNode } from "react";
 // Lembre-se de instalar: npx expo install @react-native-async-storage/async-storage
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Define o formato do objeto de usuário e do contexto
 interface User {
@@ -19,21 +19,23 @@ interface AuthContextData {
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
 // Cria o componente Provedor
-export const AuthProvider: React.FC<{children: ReactNode}> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<User | null>(null);
 
   // Função para fazer login
   const login = async (userData: User, token: string) => {
     setUser(userData);
     // Salva o token no armazenamento seguro para login persistente
-    await AsyncStorage.setItem('@TerraManager:token', token);
-    await AsyncStorage.setItem('@TerraManager:user', JSON.stringify(userData));
+    await AsyncStorage.setItem("@TerraManager:token", token);
+    await AsyncStorage.setItem("@TerraManager:user", JSON.stringify(userData));
   };
 
   // Função para fazer logout
   const logout = async () => {
-    await AsyncStorage.removeItem('@TerraManager:token');
-    await AsyncStorage.removeItem('@TerraManager:user');
+    await AsyncStorage.removeItem("@TerraManager:token");
+    await AsyncStorage.removeItem("@TerraManager:user");
     setUser(null);
   };
 
