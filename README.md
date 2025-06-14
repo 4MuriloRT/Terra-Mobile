@@ -43,7 +43,7 @@ const API_BASE_URL = "http://SEU_IP_LOCAL:3000";
 
 3.  **Execute o servidor de desenvolvimento:**
     ```bash
-    npm start
+    npx expo start
     ```
     -   Após iniciar, escaneie o QR Code com o aplicativo **Expo Go**.
     -   Alternativamente, use os scripts abaixo para builds nativos.
