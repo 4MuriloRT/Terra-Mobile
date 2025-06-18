@@ -1,7 +1,7 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "../../components/Colors"; // Ajuste o caminho conforme necessário
+import { colors } from "../../components/Colors";
 
 export default function FazendasScreen() {
   return (
@@ -51,7 +51,7 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.secondary, // Cor do botão de filtro
+    backgroundColor: colors.secondary,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,

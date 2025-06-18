@@ -11,7 +11,7 @@ import Register from "../pages/Register";
 import TabRoutes from "../pages/TabNavigator/TabRoutes";
 import { colors } from "../components/Colors";
 import DashboardScreen from "../pages/Dashboard/DashboardScreen";
-import FazendasScreen from "../pages/FazendasScreen";
+import FazendasScreen from "../pages/Fazendas/FazendasScreen";
 
 const Stack = createStackNavigator();
 
@@ -43,7 +43,7 @@ export default function Routes() {
         component={Register}
         options={{ title: "Cadastro" }}
       />
-      
+
       <Stack.Screen
         name="DashboardTabs"
         component={TabRoutes}
@@ -57,8 +57,8 @@ export default function Routes() {
       <Stack.Screen
         name="FazendasScreen"
         component={FazendasScreen}
-        options={{title: "Gestão de Fazendas" }}
+        options={{ title: "Gestão de Fazendas" }}
       />
     </Stack.Navigator>
   );
-} 
+}
