@@ -2,6 +2,7 @@ import React from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Ionicons } from "@expo/vector-icons"; // ou de onde você usa os ícones
 import Dashboard from "../Dashboard/DashboardScreen"; // substitua se o nome do seu Dashboard for diferente
+import FazendasScreen from "../FazendasScreen";
 
 const Tab = createBottomTabNavigator();
 
@@ -26,6 +27,15 @@ export default function TabRoutes() {
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="home-outline" color={color} size={24} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Fazendas"
+        component={FazendasScreen}
+        options={{
+          tabBarIcon: ({color, size}) => (
+            <Ionicons name="location-outline" color={color} size={24}/>
           ),
         }}
       />

@@ -18,7 +18,9 @@ import { ScrollView } from "react-native-gesture-handler";
 type NavigationProp = StackNavigationProp<RootStackParamList, "Register">;
 
 // <<<<<<< COLOQUE A URL BASE DO SEU BACKEND AQUI >>>>>>>
-const API_BASE_URL = "http://192.168.3.3:3000"; // USE O SEU IP E PORTA
+//const API_BASE_URL = "http://192.168.3.40:3000"; <--- Murilo
+//const API_BASE_URL = 'http://192.168.3.3:3000'; <--- João Pedro
+const API_BASE_URL = "http://192.168.3.40:3000"; // USE O SEU IP E PORTA
 
 export default function Register() {
   const navigation = useNavigation<NavigationProp>();

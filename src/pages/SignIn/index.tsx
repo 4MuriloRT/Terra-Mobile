@@ -8,8 +8,10 @@ import { RootStackParamList } from "../../screens/Types";
 import { useAuth } from "../../contexts/AuthContext";
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
+//const API_BASE_URL = "http://192.168.3.40:3000"; <--- Murilo
+//const API_BASE_URL = 'http://192.168.3.3:3000'; <--- João Pedro
 
-const API_BASE_URL = "http://192.168.3.3:3000";
+const API_BASE_URL = "http://192.168.3.40:3000";
 
 export default function SignIn() {
   const navigation = useNavigation<NavigationProp>();
@@ -48,8 +50,6 @@ export default function SignIn() {
         };
 
         await login(user, data.accessToken);
-
-        
 
         navigation.navigate("DashboardScreen");
       } else {

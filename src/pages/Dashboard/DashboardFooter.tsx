@@ -1,13 +1,24 @@
 import React from "react";
-import { View, StyleSheet } from "react-native";
+import { View, StyleSheet, TouchableOpacity } from "react-native";
 import { FontAwesome5 } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "../../screens/Types";
+
+type NavigationProp = StackNavigationProp<RootStackParamList>;
 
 export const DashboardFooter = () => {
+  const navigation = useNavigation<NavigationProp>();
+
   return (
     <View style={styles.footer}>
       <FontAwesome5 name="seedling" size={28} color="#131e10" />
-      <FontAwesome5 name="home" size={28} color="#131e10" />
-      <FontAwesome5 name="tractor" size={28} color="#131e10" />
+      <TouchableOpacity onPress={() => navigation.navigate("DashboardScreen")}>
+        <FontAwesome5 name="home" size={28} color="#131e10" />
+      </TouchableOpacity>
+      <TouchableOpacity onPress={()=> navigation.navigate("FazendasScreen")}>
+        <FontAwesome5 name="tractor" size={28} color="#131e10" />
+      </TouchableOpacity>
       <FontAwesome5 name="users" size={28} color="#131e10" />
     </View>
   );
@@ -18,7 +29,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-around",
     paddingVertical: 32,
-    backgroundColor: "#fff",    
+    backgroundColor: "#fff",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
   },
