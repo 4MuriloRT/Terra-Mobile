@@ -12,6 +12,7 @@ import TabRoutes from "../pages/TabNavigator/TabRoutes";
 import { colors } from "../components/Colors";
 import DashboardScreen from "../pages/Dashboard/DashboardScreen";
 import FazendasScreen from "../pages/Fazendas/FazendasScreen";
+import AddFarmScreen from "../pages/Fazendas/AddFarmScreen";
 
 const Stack = createStackNavigator();
 
@@ -58,6 +59,11 @@ export default function Routes() {
         name="FazendasScreen"
         component={FazendasScreen}
         options={{ title: "Gestão de Fazendas" }}
+      />
+      <Stack.Screen
+        name="AddFarmScreen"
+        component={AddFarmScreen}
+        options={{headerShown: false}}
       />
     </Stack.Navigator>
   );

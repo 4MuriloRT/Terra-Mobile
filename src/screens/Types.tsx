@@ -4,4 +4,5 @@ export type RootStackParamList = {
   Register: undefined;
   DashboardScreen: undefined;
   FazendasScreen: undefined;
+  AddFarmScreen: undefined;
 };

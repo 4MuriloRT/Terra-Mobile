@@ -1,9 +1,16 @@
 import React from "react";
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { RootStackParamList } from "../../screens/Types";
 import { colors } from "../../components/Colors";
 
+type FazendasScreenNavigationProp = StackNavigationProp<RootStackParamList, "FazendasScreen">;
+
 export default function FazendasScreen() {
+  const navigation = useNavigation<FazendasScreenNavigationProp>();
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -12,7 +19,10 @@ export default function FazendasScreen() {
             <Ionicons name="filter-outline" size={20} color={colors.white} />
             <Text style={styles.buttonText}>Filtros</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.filterButton}>
+          <TouchableOpacity 
+            style={styles.filterButton}
+            onPress={() => navigation.navigate("AddFarmScreen")}
+          >
             <Ionicons name="add-outline" size={20} color={colors.white} />
             <Text style={styles.buttonText}>Nova Fazenda</Text>
           </TouchableOpacity>
