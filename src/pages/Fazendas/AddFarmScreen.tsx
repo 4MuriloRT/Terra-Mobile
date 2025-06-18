@@ -7,6 +7,8 @@ import {
   TouchableOpacity,
   ScrollView,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
@@ -50,6 +52,10 @@ export default function AddFarmScreen() {
   };
 
   return (
+    <KeyboardAvoidingView // Adicione KeyboardAvoidingView aqui
+      style={styles.keyboardAvoidingContainer}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'} // 'padding' para iOS, 'height' para Android
+    >
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity
@@ -62,7 +68,11 @@ export default function AddFarmScreen() {
         <View style={{ width: 24 }} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.formContent}>
+      <ScrollView
+        contentContainerStyle={styles.formContent}
+        keyboardShouldPersistTaps="handled" // Adicione esta linha
+        showsVerticalScrollIndicator={false} // Opcional: esconde o indicador de rolagem
+      >
         <Text style={styles.inputLabel}>Nome</Text>
         <TextInput
           style={styles.input}
@@ -171,10 +181,14 @@ export default function AddFarmScreen() {
         </TouchableOpacity>
       </ScrollView>
     </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoidingContainer: { // Novo estilo para o KeyboardAvoidingView
+    flex: 1,
+  },
   container: {
     flex: 1,
     backgroundColor: colors.primary, 
@@ -202,6 +216,7 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: "#1E322D", 
     flexGrow: 1, 
+    paddingBottom: 40,
   },
   inputLabel: {
     fontSize: 16,
@@ -231,6 +246,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     alignItems: "center",
     marginTop: 30,
+    marginBottom: 20,
   },
   createButtonText: {
     color: colors.white,
