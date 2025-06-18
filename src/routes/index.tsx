@@ -57,7 +57,7 @@ export default function Routes() {
       <Stack.Screen
         name="FazendasScreen"
         component={FazendasScreen}
-        options={{title: "Minhas Fazendas" }}
+        options={{title: "Gestão de Fazendas" }}
       />
     </Stack.Navigator>
   );
