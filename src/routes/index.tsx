@@ -13,6 +13,8 @@ import { colors } from "../components/Colors";
 import DashboardScreen from "../pages/Dashboard/DashboardScreen";
 import FazendasScreen from "../pages/Fazendas/FazendasScreen";
 import AddFarmScreen from "../pages/Fazendas/AddFarmScreen";
+import AddCultivoScreen from "../pages/Cultivos/AddCultivoScreen";
+import CultivosScreen from "../pages/Cultivos/CultivosScreen";
 
 const Stack = createStackNavigator();
 
@@ -64,6 +66,17 @@ export default function Routes() {
         name="AddFarmScreen"
         component={AddFarmScreen}
         options={{headerShown: false}}
+      />
+
+      <Stack.Screen
+        name="AddCultivoScreen"
+        component={AddCultivoScreen}
+        options={{headerShown: false}}
+      />
+      <Stack.Screen
+        name="CultivosScreen"
+        component={CultivosScreen}
+        options={{ title: "Gestão de Cultivos" }}
       />
     </Stack.Navigator>
   );

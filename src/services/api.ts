@@ -1,21 +1,21 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 //const API_BASE_URL = "http://192.168.3.40:3000"; <--- Murilo
 //const API_BASE_URL = 'http://192.168.3.3:3000'; <--- João Pedro
-const API_BASE_URL = 'http://192.168.3.40:3000'; // Sua URL base
+const API_BASE_URL = "http://192.168.3.3:3000"; // Sua URL base
 
 const fetchAuthenticated = async (endpoint: string) => {
-  const token = await AsyncStorage.getItem('@TerraManager:token');
+  const token = await AsyncStorage.getItem("@TerraManager:token");
 
   if (!token) {
-    throw new Error('Token de autenticação não encontrado.');
+    throw new Error("Token de autenticação não encontrado.");
   }
 
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: 'GET',
+    method: "GET",
     headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
     },
   });
 

@@ -5,4 +5,6 @@ export type RootStackParamList = {
   DashboardScreen: undefined;
   FazendasScreen: undefined;
   AddFarmScreen: undefined;
+  AddCultivoScreen: undefined;
+  CultivosScreen: undefined;
 };

@@ -12,11 +12,13 @@ export const DashboardFooter = () => {
 
   return (
     <View style={styles.footer}>
-      <FontAwesome5 name="seedling" size={28} color="#131e10" />
+      <TouchableOpacity onPress={() => navigation.navigate("CultivosScreen")}>
+        <FontAwesome5 name="seedling" size={28} color="#131e10" />
+      </TouchableOpacity>
       <TouchableOpacity onPress={() => navigation.navigate("DashboardScreen")}>
         <FontAwesome5 name="home" size={28} color="#131e10" />
       </TouchableOpacity>
-      <TouchableOpacity onPress={()=> navigation.navigate("FazendasScreen")}>
+      <TouchableOpacity onPress={() => navigation.navigate("FazendasScreen")}>
         <FontAwesome5 name="tractor" size={28} color="#131e10" />
       </TouchableOpacity>
       <FontAwesome5 name="users" size={28} color="#131e10" />
