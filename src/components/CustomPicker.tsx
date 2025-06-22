@@ -85,7 +85,7 @@ export const CustomPicker: React.FC<CustomPickerProps> = ({
                 </TouchableOpacity>
               </View>
               <FlatList
-                data={options.filter((opt) => opt.value !== "")} // Não mostra o placeholder na lista
+                data={options.filter((opt) => opt.value !== "")} 
                 renderItem={renderOption}
                 keyExtractor={(item) => item.value.toString()}
               />

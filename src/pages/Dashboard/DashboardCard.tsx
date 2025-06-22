@@ -6,7 +6,7 @@ interface Props {
   children?: React.ReactNode;
   loading?: boolean;
   onPress?: () => void;
-  flex?: number; // Prop para controlar o tamanho do card
+  flex?: number; 
 }
 
 export const DashboardCard: React.FC<Props> = ({ title, children, loading, onPress, flex = 1 }) => {

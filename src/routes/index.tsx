@@ -1,10 +1,5 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
-
-// Removi a importação desnecessária do NavigationContainer
-// Não é necessário importar 'View' aqui, o erro provavelmente está em outro lugar
-// mas vamos garantir que a estrutura de rotas esteja limpa.
-
 import Welcome from "../pages/Welcome";
 import SignIn from "../pages/SignIn";
 import Register from "../pages/Register";

@@ -24,7 +24,6 @@ type NavigationProp = StackNavigationProp<
   "AddCultivoScreen"
 >;
 
-// --- DADOS PARA OS SELETORES ---
 const tiposDeSoloDisponiveis = [
   { label: "Selecione o tipo de solo...", value: "" },
   { label: "Arenoso", value: "ARENOSO" },

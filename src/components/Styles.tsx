@@ -1,20 +1,20 @@
 // src/components/Styles.ts
 import { StyleSheet } from "react-native";
-import { colors } from "../components/Colors"; // Importa as cores do arquivo colors.ts
+import { colors } from "../components/Colors"; 
 
 export default StyleSheet.create({
   text: {
     color: colors.textSecondary,
   },
   image: {
-    flex: 0, // geralmente não é necessário flex para imagens fixas
+    flex: 0, 
     width: 350,
     height: 350,
-    resizeMode: "cover", // ou "contain", dependendo do efeito desejado
+    resizeMode: "cover",
     alignSelf: "center",
     borderRadius: 175,
     margin: 50,
-    marginTop: 75, // metade de 150
+    marginTop: 75, 
   },
 
   title: {

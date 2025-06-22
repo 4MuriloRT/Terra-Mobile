@@ -8,7 +8,6 @@ import { colors } from "../../components/Colors";
 
 type CultivosScreenNavigationProp = StackNavigationProp<RootStackParamList, "CultivosScreen">;
 
-// Verifique se o "export default" está aqui
 export default function CultivosScreen() {
   const navigation = useNavigation<CultivosScreenNavigationProp>();
 
@@ -37,7 +36,6 @@ export default function CultivosScreen() {
   );
 }
 
-// ... (o restante dos seus estilos)
 const styles = StyleSheet.create({
   container: {
     flex: 1,

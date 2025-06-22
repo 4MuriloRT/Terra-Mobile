@@ -6,7 +6,6 @@ import { DashboardFooter } from '../Dashboard/DashboardFooter';
 import DashboardCarousel from './DashboardCarousel';
 import { useDashboard } from '../../hooks/useDashboard';
 
-// Componentes para exibir os dados dentro dos cards
 const ClimaContent = ({ data }: { data: any }) => (
   <>
     <Text style={styles.dataText}>{data?.temperaturaMax.toFixed(1)}°C</Text>
@@ -24,12 +23,12 @@ const CotacaoContent = ({ data }: { data: any }) => (
 const NoticiaContent = ({ data }: { data: any }) => {
   return (
     <View style={styles.noticiaContainer}>
-      {/* Apenas verificamos se data.img existe antes de renderizar */}
+      
       {data?.img && (
         <Image 
           source={{ uri: data.img }} 
           style={styles.newsImage} 
-          resizeMode="cover" // Garante que a imagem cubra o espaço
+          resizeMode="cover" 
         />
       )}
       <Text style={styles.newsTitle}>{data?.titulo}</Text>

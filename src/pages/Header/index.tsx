@@ -6,17 +6,17 @@ import { useAuth } from "../../contexts/AuthContext";
 export const DashboardHeader = () => {
   const { user } = useAuth();
 
-  // Função para pegar um nome de exibição mais amigável
+  
   const getDisplayName = () => {
     if (user && user.nome) {
-      // Se o 'nome' que recebemos for um email, pegamos só a parte antes do @
+      
       if (user.nome.includes('@')) {
         return user.nome.split('@')[0];
       }
-      // Se não for um email, apenas retornamos o nome que veio
+      
       return user.nome;
     }
-    // Texto padrão se não houver usuário
+    
     return 'Bem-vindo';
   };
 
@@ -28,7 +28,7 @@ export const DashboardHeader = () => {
         <View style={styles.textContainer}>
           <View style={styles.nameRow}>
             <MaterialCommunityIcons name="bell" size={18} color="white" />
-            {/* Usamos a função para exibir o nome tratado */}
+          
             <Text style={styles.name}> {getDisplayName()} </Text>
           </View>
           <Text style={styles.role}>{user ? user.role.toLowerCase() : 'usuário'}</Text>
@@ -44,7 +44,6 @@ export const DashboardHeader = () => {
   );
 };
 
-// ... (seus estilos continuam iguais)
 
 const styles = StyleSheet.create({
   container: {

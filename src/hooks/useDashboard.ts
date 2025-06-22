@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
 import { fetchClima, fetchCotacao, fetchNoticia } from "../services/api";
 
-
 interface Clima {
   data: string;
   temperaturaMax: number;
@@ -37,12 +36,9 @@ export const useDashboard = () => {
         const [climaData, cotacaoData, noticiaData] = await Promise.all([
           fetchClima(),
           fetchCotacao("SOJA"),
-          fetchNoticia("agronegocio,rural", 5),
+          fetchNoticia("milho,soja", 5),
         ]);
 
-        
-
-        
         let climaParaExibir = null;
         if (climaData?.previsaoProximosDias?.length > 0) {
           const today = new Date().toISOString().split("T")[0];
@@ -51,7 +47,7 @@ export const useDashboard = () => {
           );
 
           if (!climaParaExibir) {
-            climaParaExibir = climaData.previsaoProximosDias[0]; // Pega a primeira previsão se a de hoje não for encontrada
+            climaParaExibir = climaData.previsaoProximosDias[0];
           }
         }
         setClima(climaParaExibir);
