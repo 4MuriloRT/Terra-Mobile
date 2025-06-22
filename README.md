@@ -1,56 +1,64 @@
-
-# Terra Mobile
+Terra Mobile
 
 Aplicativo de dashboard para gerenciamento agrícola.
 
-**Stack Principal:** React Native | Expo | TypeScript | React Navigation
+Stack Principal: React Native | Expo | TypeScript | React Navigation
 
-## 🔧 Pré-requisitos
+✨ Funcionalidades
+Dashboard Dinâmico: Visualização de informações essenciais como clima, cotação da soja e as últimas notícias do agronegócio.
 
--   Node.js (LTS)
--   NPM / Yarn
--   Expo CLI: `npm install -g expo-cli`
--   Git
--   Android Studio / Xcode (para builds nativos)
+Autenticação de Usuário: Sistema completo de registro e login de usuários.
 
-## ⚠️ Configuração Essencial do Backend
+Gerenciamento de Fazendas: Tela para visualização e adição de novas fazendas.
 
-A aplicação requer conexão com um servidor backend. O endereço IP está fixado no código e **precisa ser atualizado** para o IP da máquina local que está executando o servidor.
+Gerenciamento de Cultivos:Cadastro detalhado de novos cultivos.
 
-**Arquivos para modificar:**
--   `src/services/api.ts`
--   `src/pages/SignIn/index.tsx`
--   `src/pages/Register/index.tsx`
+Formulário com seletores customizados para uma melhor experiência de usuário.
 
-**Altere a seguinte constante nos arquivos listados acima:**
-```typescript
+🔧 Pré-requisitos
+Node.js (LTS)
+NPM / Yarn
+Expo CLI: npm install -g expo-cli
+Git
+Android Studio / Xcode (para builds nativos)
+
+⚠️ Configuração Essencial do Backend
+A aplicação requer conexão com um servidor backend. O endereço IP está fixado no código e precisa ser atualizado para o IP da máquina local que está executando o servidor.
+
+Arquivos para modificar:
+
+src/services/api.ts
+src/pages/SignIn/index.tsx
+src/pages/Register/index.tsx
+src/pages/Cultivos/AddCultivoScreen.tsx
+Altere a seguinte constante nos arquivos listados acima:
+
+TypeScript
+
 // Substitua pelo IP da sua máquina local
 const API_BASE_URL = "http://SEU_IP_LOCAL:3000";
-```
 
-## ⚙️ Setup e Execução
+⚙️ Setup e Execução
+Clone o repositório:
 
-1.  **Clone o repositório:**
-    ```bash
-    git clone https://github.com/joaopedrofreitas9/terra-mobile.git
-    cd terra-mobile
-    ```
+Bash
 
-2.  **Instale as dependências:**
-    ```bash
-    npm install
-    ```
+git clone https://github.com/joaopedrofreitas9/terra-mobile.git
+cd terra-mobile
+Instale as dependências:
 
-3.  **Execute o servidor de desenvolvimento:**
-    ```bash
-    npx expo start
-    ```
-    -   Após iniciar, escaneie o QR Code com o aplicativo **Expo Go**.
-    -   Alternativamente, use os scripts abaixo para builds nativos.
+Bash
 
-## 📜 Scripts Disponíveis
+npm install
+Execute o servidor de desenvolvimento:
 
--   `npm start`: Inicia o Metro Bundler para desenvolvimento com Expo Go.
--   `npm run android`: Compila e executa a aplicação em um emulador/dispositivo Android.
--   `npm run ios`: Compila e executa a aplicação em um simulador/dispositivo iOS (requer macOS).
--   `npm run web`: Inicia a versão web do aplicativo.
+Bash
+
+npx expo start
+Após iniciar, escaneie o QR Code com o aplicativo Expo Go.
+Alternativamente, use os scripts abaixo para builds nativos.
+📜 Scripts Disponíveis
+npm start: Inicia o Metro Bundler para desenvolvimento com Expo Go.
+npm run android: Compila e executa a aplicação em um emulador/dispositivo Android.
+npm run ios: Compila e executa a aplicação em um simulador/dispositivo iOS (requer macOS).
+npm run web: Inicia a versão web do aplicativo.
