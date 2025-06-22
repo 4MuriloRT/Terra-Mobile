@@ -1,49 +1,46 @@
-Terra Mobile
+# Terra Manager-Mobile
 
 Aplicativo de dashboard para gerenciamento agrícola.
 
-Stack Principal: React Native | Expo | TypeScript | React Navigation
+**Stack Principal:** React Native | Expo | TypeScript | React Navigation
 
-✨ Funcionalidades
-Dashboard Dinâmico: Visualização de informações essenciais como clima, cotação da soja e as últimas notícias do agronegócio.
+##  Funcionalidades
 
-Autenticação de Usuário: Sistema completo de registro e login de usuários.
+-   **Dashboard Dinâmico:** Visualização de informações essenciais como clima, cotação da soja e as últimas notícias do agronegócio.
+-   **Autenticação de Usuário:** Sistema completo de registro e login de usuários.
+-   **Gerenciamento de Fazendas:** Tela para visualização e adição de novas fazendas.
+-   **Gerenciamento de Cultivos:**
+    -   Cadastro detalhado de novos cultivos.
+    -   Formulário com seletores customizados para uma melhor experiência de usuário.
 
-Gerenciamento de Fazendas: Tela para visualização e adição de novas fazendas.
+## 🔧 Pré-requisitos
 
-Gerenciamento de Cultivos:Cadastro detalhado de novos cultivos.
+-   Node.js (LTS)
+-   NPM / Yarn
+-   Expo CLI: `npm install -g expo-cli`
+-   Git
+-   Android Studio / Xcode (para builds nativos)
 
-Formulário com seletores customizados para uma melhor experiência de usuário.
+## ⚠️ Configuração Essencial do Backend
 
-🔧 Pré-requisitos
-Node.js (LTS)
-NPM / Yarn
-Expo CLI: npm install -g expo-cli
-Git
-Android Studio / Xcode (para builds nativos)
+A aplicação requer conexão com um servidor backend. O endereço IP está fixado no código e **precisa ser atualizado** para o IP da máquina local que está executando o servidor.
 
-⚠️ Configuração Essencial do Backend
-A aplicação requer conexão com um servidor backend. O endereço IP está fixado no código e precisa ser atualizado para o IP da máquina local que está executando o servidor.
+**Arquivos para modificar:**
+-   `src/services/api.ts`
+-   `src/pages/SignIn/index.tsx`
+-   `src/pages/Register/index.tsx`
+-   `src/pages/Cultivos/AddCultivoScreen.tsx`
 
-Arquivos para modificar:
-
-src/services/api.ts
-src/pages/SignIn/index.tsx
-src/pages/Register/index.tsx
-src/pages/Cultivos/AddCultivoScreen.tsx
-Altere a seguinte constante nos arquivos listados acima:
-
-TypeScript
-
+**Altere a seguinte constante nos arquivos listados acima:**
+```typescript
 // Substitua pelo IP da sua máquina local
 const API_BASE_URL = "http://SEU_IP_LOCAL:3000";
-
 ⚙️ Setup e Execução
 Clone o repositório:
 
 Bash
 
-git clone https://github.com/joaopedrofreitas9/terra-mobile.git
+git clone [https://github.com/joaopedrofreitas9/terra-mobile.git](https://github.com/joaopedrofreitas9/terra-mobile.git)
 cd terra-mobile
 Instale as dependências:
 
