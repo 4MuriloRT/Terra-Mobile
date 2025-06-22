@@ -36,7 +36,7 @@ export const useDashboard = () => {
         const [climaData, cotacaoData, noticiaData] = await Promise.all([
           fetchClima(),
           fetchCotacao("SOJA"),
-          fetchNoticia("milho,soja", 5),
+          fetchNoticia("milho,soja", 7),
         ]);
 
         let climaParaExibir = null;
