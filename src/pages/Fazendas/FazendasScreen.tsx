@@ -67,9 +67,16 @@ export default function FazendasScreen() {
     <View style={styles.tableRow}>
       <Text style={[styles.cell, { flex: 2.5 }]}>{item.nome}</Text>
       <Text style={[styles.cell, { flex: 1.5 }]}>{item.municipio}</Text>
-      <View style={[{ flex: 1.2, alignItems: 'center'}]}>
-        <View style={[styles.statusBadge, {backgroundColor: item.ativo ? colors.secondary : '#a14242'}]}>
-            <Text style={styles.statusText}>{item.ativo ? "ATIVO" : "INATIVO"}</Text>
+      <View style={[{ flex: 1.2, alignItems: "center" }]}>
+        <View
+          style={[
+            styles.statusBadge,
+            { backgroundColor: item.ativo ? colors.secondary : "#a14242" },
+          ]}
+        >
+          <Text style={styles.statusText}>
+            {item.ativo ? "ATIVO" : "INATIVO"}
+          </Text>
         </View>
       </View>
       <View style={[styles.actionsCell, { flex: 1.5 }]}>
@@ -83,9 +90,19 @@ export default function FazendasScreen() {
     </View>
   );
 
+  const EmptyListComponent = () => (
+    <View style={styles.emptyContainer}>
+      <Ionicons
+        name="leaf-outline"
+        size={80}
+        color="rgba(255, 255, 255, 0.2)"
+      />
+      <Text style={styles.emptyText}>Nenhuma fazenda encontrada.</Text>
+    </View>
+  );
+
   return (
     <View style={styles.container}>
-      
       <View style={styles.header}>
         <View style={styles.headerButtons}>
           <TouchableOpacity style={styles.filterButton}>
@@ -103,20 +120,25 @@ export default function FazendasScreen() {
       </View>
 
       <View style={styles.content}>
-        <View style={styles.tableHeader}>
-          <Text style={[styles.headerText, { flex: 2.5 }]}>Nome</Text>
-          <Text style={[styles.headerText, { flex: 1.5 }]}>Município</Text>
-          <Text style={[styles.headerText, { flex: 1.2, textAlign: 'center' }]}>Status</Text>
-          <Text style={[styles.headerText, { flex: 1.5, textAlign: 'center' }]}>Ações</Text>
-        </View>
+        {fazendas.length === 0 ? (
+          <EmptyListComponent />
+        ) : (
+          <>
+            <View style={styles.tableHeader}>
+              <Text style={[styles.headerText, { flex: 2.5 }]}>Nome</Text>
+              <Text style={[styles.headerText, { flex: 1.5 }]}>Município</Text>
+              <Text style={[styles.headerText, { flex: 1.2, textAlign: 'center' }]}>Status</Text>
+              <Text style={[styles.headerText, { flex: 1.5, textAlign: 'center' }]}>Ações</Text>
+            </View>
 
-        
-        <FlatList
-          data={fazendas}
-          renderItem={renderItem}
-          keyExtractor={(item) => item.id}
-          showsVerticalScrollIndicator={false}
-        />
+            <FlatList
+              data={fazendas}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.id}
+              showsVerticalScrollIndicator={false}
+            />
+          </>
+        )}
       </View>
     </View>
   );
@@ -125,10 +147,10 @@ export default function FazendasScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1E322D',
+    backgroundColor: "#1E322D",
   },
   header: {
-    backgroundColor: colors.primary, 
+    backgroundColor: colors.primary,
     padding: 15,
     flexDirection: "row",
     alignItems: "center",
@@ -142,14 +164,14 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: colors.secondary, 
+    backgroundColor: colors.secondary,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
     marginRight: 10,
   },
   buttonText: {
-    color: colors.white, 
+    color: colors.white,
     marginLeft: 5,
     fontWeight: "bold",
   },
@@ -158,21 +180,21 @@ const styles = StyleSheet.create({
     padding: 15,
   },
   tableHeader: {
-    flexDirection: 'row',
+    flexDirection: "row",
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
+    borderBottomColor: "rgba(255, 255, 255, 0.2)",
     paddingBottom: 10,
     marginBottom: 10,
   },
   headerText: {
     color: colors.white,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     fontSize: 14,
   },
   tableRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: 8,
     paddingVertical: 15,
     paddingHorizontal: 10,
@@ -190,15 +212,26 @@ const styles = StyleSheet.create({
   statusText: {
     color: colors.white,
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   actionsCell: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     paddingLeft: 15,
     gap: 5,
   },
   actionButton: {
     padding: 5,
   },
-}); 
+  emptyContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  emptyText: {
+    color: colors.white,
+    fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 20,
+  },
+});
