@@ -8,11 +8,9 @@ export const DashboardHeader = () => {
 
   const getDisplayName = () => {
     if (user && user.nome) {
-      if (user.nome.includes("nome")) {
-        return user.nome.split("nome")[0];
-      }
-
-      return user.nome;
+      const nameParts = user.nome.split(" ");
+      // Pega os dois primeiros nomes
+      return `${nameParts[0]} ${nameParts[1] || ""}`.trim();
     }
 
     return "Bem-vindo";
@@ -26,12 +24,8 @@ export const DashboardHeader = () => {
         <View style={styles.textContainer}>
           <View style={styles.nameRow}>
             <MaterialCommunityIcons name="bell" size={18} color="white" />
-
-            <Text style={styles.name}> {getDisplayName()} </Text>
+            <Text style={styles.name}>{getDisplayName()}</Text>
           </View>
-          <Text style={styles.role}>
-            {user ? user.role.toLowerCase() : "usuário"}
-          </Text>
         </View>
         <FontAwesome5
           name="user-circle"
@@ -72,12 +66,9 @@ const styles = StyleSheet.create({
   },
   name: {
     fontWeight: "bold",
-    fontSize: 16,
+    fontSize: 18,
     color: "#fff",
-  },
-  role: {
-    fontSize: 14,
-    color: "#fff",
+    marginLeft: 8, // Adicionado espaçamento entre o sino e o nome
   },
   avatar: {
     marginLeft: 8,
