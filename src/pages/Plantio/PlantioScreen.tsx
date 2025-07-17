@@ -21,14 +21,14 @@ type PlantioScreenNavigationProp = StackNavigationProp<
 >;
 
 const plantioData = [
-  { id: "1", name: "Soja", image: require("../../assets/soy.svg") },
-  { id: "2", name: "Milho", image: require("../../assets/corn.svg") },
-  { id: "3", name: "Feijão", image: require("../../assets/bean.svg") },
-  { id: "4", name: "Arroz", image: require("../../assets/rice.svg") },
-  { id: "5", name: "Café", image: require("../../assets/coffee.svg") },
-  { id: "6", name: "Banana", image: require("../../assets/banana.svg") },
-  { id: "7", name: "Laranja", image: require("../../assets/orange.svg") },
-  { id: "8", name: "Algodão", image: require("../../assets/cotton.svg") },
+  { id: "1", name: "Soja", image: require("../../assets/soy.png") },
+  { id: "2", name: "Milho", image: require("../../assets/corn.png") },
+  { id: "3", name: "Feijão", image: require("../../assets/bean.png") },
+  { id: "4", name: "Arroz", image: require("../../assets/rice.png") },
+  { id: "5", name: "Café", image: require("../../assets/coffee.png") },
+  { id: "6", name: "Banana", image: require("../../assets/banana.png") },
+  { id: "7", name: "Laranja", image: require("../../assets/orange.png") },
+  { id: "8", name: "Algodão", image: require("../../assets/cotton.png") },
 ];
 
 const { width } = Dimensions.get("window");
