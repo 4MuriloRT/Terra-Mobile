@@ -126,7 +126,7 @@ export default function AddCultivoScreen() {
         );
         return;
       }
-      const API_BASE_URL = "http://192.168.3.50:3000";
+      const API_BASE_URL = "http://192.168.3.40:3000";
       const response = await fetch(`${API_BASE_URL}/cultivar`, {
         method: "POST",
         headers: {
