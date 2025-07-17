@@ -6,7 +6,10 @@ import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../screens/Types";
 import { colors } from "../../components/Colors";
 
-type CultivosScreenNavigationProp = StackNavigationProp<RootStackParamList, "CultivosScreen">;
+type CultivosScreenNavigationProp = StackNavigationProp<
+  RootStackParamList,
+  "CultivosScreen"
+>;
 
 export default function CultivosScreen() {
   const navigation = useNavigation<CultivosScreenNavigationProp>();
@@ -74,9 +77,9 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    backgroundColor: '#1E322D',
+    backgroundColor: "#1E322D",
     padding: 15,
-    justifyContent: 'center',
-    alignItems: 'center'
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

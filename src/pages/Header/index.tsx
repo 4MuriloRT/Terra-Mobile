@@ -6,18 +6,16 @@ import { useAuth } from "../../contexts/AuthContext";
 export const DashboardHeader = () => {
   const { user } = useAuth();
 
-  
   const getDisplayName = () => {
     if (user && user.nome) {
-      
-      if (user.nome.includes('@')) {
-        return user.nome.split('@')[0];
+      if (user.nome.includes("nome")) {
+        return user.nome.split("nome")[0];
       }
-      
+
       return user.nome;
     }
-    
-    return 'Bem-vindo';
+
+    return "Bem-vindo";
   };
 
   return (
@@ -28,10 +26,12 @@ export const DashboardHeader = () => {
         <View style={styles.textContainer}>
           <View style={styles.nameRow}>
             <MaterialCommunityIcons name="bell" size={18} color="white" />
-          
+
             <Text style={styles.name}> {getDisplayName()} </Text>
           </View>
-          <Text style={styles.role}>{user ? user.role.toLowerCase() : 'usuário'}</Text>
+          <Text style={styles.role}>
+            {user ? user.role.toLowerCase() : "usuário"}
+          </Text>
         </View>
         <FontAwesome5
           name="user-circle"
@@ -43,7 +43,6 @@ export const DashboardHeader = () => {
     </View>
   );
 };
-
 
 const styles = StyleSheet.create({
   container: {

@@ -1,8 +1,8 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 //const API_BASE_URL = "http://192.168.3.40:3000"; <--- Murilo
-//const API_BASE_URL = 'http://192.168.3.3:3000'; <--- João Pedro
-const API_BASE_URL = "http://192.168.3.3:3000"; // Sua URL base
+//const API_BASE_URL = 'http://192.168.3.50:3000'; <--- João Pedro
+const API_BASE_URL = "http://192.168.3.50:3000"; // Sua URL base
 
 const fetchAuthenticated = async (endpoint: string) => {
   const token = await AsyncStorage.getItem("@TerraManager:token");
