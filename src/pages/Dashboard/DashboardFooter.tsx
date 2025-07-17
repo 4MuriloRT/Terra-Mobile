@@ -18,7 +18,7 @@ export const DashboardFooter = () => {
       <TouchableOpacity onPress={() => navigation.navigate("FazendasScreen")}>
         <FontAwesome5 name="home" size={28} color="#131e10" />
       </TouchableOpacity>
-      <TouchableOpacity onPress={() => navigation.navigate("DashboardScreen")}>
+      <TouchableOpacity onPress={() => navigation.navigate("PlantioScreen")}>
         <FontAwesome5 name="tractor" size={28} color="#131e10" />
       </TouchableOpacity>
     </View>
