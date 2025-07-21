@@ -2,162 +2,133 @@ import React, { useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
   ScrollView,
+  StyleSheet,
   Alert,
-  KeyboardAvoidingView,
   Platform,
+  KeyboardAvoidingView,
+  ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import { CustomPicker } from "../../components/CustomPicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-
 import { RootStackParamList } from "../../screens/Types";
 import { colors } from "../../components/Colors";
+import { createCultivar } from "../../services/api";
+import { CustomPicker } from "../../components/CustomPicker";
 
 type NavigationProp = StackNavigationProp<
   RootStackParamList,
   "AddCultivoScreen"
 >;
 
-const tiposDeSoloDisponiveis = [
-  { label: "Selecione o tipo de solo...", value: "" },
-  { label: "Arenoso", value: "ARENOSO" },
-  { label: "Argiloso", value: "ARGILOSO" },
-  { label: "Siltoso", value: "SILTOSO" },
-  { label: "Misto", value: "MISTO" },
-  { label: "Humífero", value: "HUMIFERO" },
-  { label: "Calcário", value: "CALCARIO" },
-  { label: "Gleissolo", value: "GLEISSOLO" },
-  { label: "Latossolo", value: "LATOSSOLO" },
-  { label: "Cambissolo", value: "CAMBISSOLO" },
-  { label: "Organossolo", value: "ORGANOSSOLO" },
-  { label: "Neossolo", value: "NEOSSOLO" },
-  { label: "Planossolo", value: "PLANOSSOLO" },
-  { label: "Vertissolo", value: "VERTISSOLO" },
-];
-
-const pragasDisponiveis = [
-  { label: "Selecione a praga...", value: "" },
-  { label: "Lagarta-do-cartucho", value: "LAGARTA_DO_CARTUCHO" },
-  { label: "Helicoverpa", value: "HELICOVERPA" },
-  { label: "Mosca-branca", value: "MOSCA_BRANCA" },
-  { label: "Vaquinha", value: "VAQUINHA" },
-  { label: "Percevejo-verde", value: "PERCEVEJO_VERDE" },
-  { label: "Percevejo-marrom", value: "PERCEVEJO_MARROM" },
-  { label: "Lagarta-da-soja", value: "LAGARTA_DA_SOJA" },
-  { label: "Broca-da-cana", value: "BROCA_DA_CANA" },
-  { label: "Pulgão-do-algodoeiro", value: "PULGAO_DO_ALGODOEIRO" },
-  { label: "Bicudo-do-algodoeiro", value: "BICUDO_DO_ALGODOEIRO" },
-];
-
-// Função para formatar a data
+// Função para formatar a data automaticamente no formato DD/MM/AAAA
 const maskDate = (text: string) => {
   let digits = text.replace(/\D/g, "");
   digits = digits.slice(0, 8);
-
-  if (digits.length > 4) {
+  if (digits.length > 4)
     return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
-  } else if (digits.length > 2) {
-    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
-  }
-
+  if (digits.length > 2) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
   return digits;
+};
+
+// Função para converter data DD/MM/AAAA para formato AAAA-MM-DD
+const toAPIDate = (dateString: string) => {
+  if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) return null;
+  const [day, month, year] = dateString.split("/");
+  return `${year}-${month}-${day}`;
 };
 
 export default function AddCultivoScreen() {
   const navigation = useNavigation<NavigationProp>();
+  const [isLoading, setIsLoading] = useState(false);
 
+  // Estados para todos os campos do formulário
   const [nomeCientifico, setNomeCientifico] = useState("");
   const [nomePopular, setNomePopular] = useState("");
   const [tipoPlanta, setTipoPlanta] = useState("");
   const [tipoSolo, setTipoSolo] = useState("");
   const [phSolo, setPhSolo] = useState("");
-  const [plantioInicio, setPlantioInicio] = useState("");
-  const [plantioFim, setPlantioFim] = useState("");
+  const [dataPlantioInicio, setDataPlantioInicio] = useState("");
+  const [dataPlantioFim, setDataPlantioFim] = useState("");
   const [periodoDias, setPeriodoDias] = useState("");
-  const [agua, setAgua] = useState("");
-  const [nitrogenio, setNitrogenio] = useState("");
-  const [fosforo, setFosforo] = useState("");
-  const [potassio, setPotassio] = useState("");
-  const [cicloDias, setCicloDias] = useState("");
+  const [mmAgua, setMmAgua] = useState("");
+  const [aduboNitrogenio, setAduboNitrogenio] = useState("");
+  const [aduboFosforo, setAduboFosforo] = useState("");
+  const [aduboPotassio, setAduboPotassio] = useState("");
+  const [tempoCicloDias, setTempoCicloDias] = useState("");
+  const [densidadePlantio, setDensidadePlantio] = useState("");
+  const [densidadeColheita, setDensidadeColheita] = useState("");
   const [observacao, setObservacao] = useState("");
-  const [praga, setPraga] = useState("");
-  const [fornecedor, setFornecedor] = useState("");
 
-  const handleCreateCultivo = async () => {
-    if (!nomeCientifico || !nomePopular) {
-      Alert.alert(
-        "Erro",
-        "Por favor, preencha pelo menos o nome científico e popular."
-      );
-      return;
-    }
-
-    const cultivoData = {
+  const handleCreate = async () => {
+    // Validação mais completa baseada no DTO
+    const requiredFields = [
       nomeCientifico,
       nomePopular,
       tipoPlanta,
       tipoSolo,
-      fornecedor,
-      praga,
-      observacao,
-      phSolo: parseFloat(phSolo) || 0,
-      dataPlantioInicio: plantioInicio,
-      dataPlantioFim: plantioFim,
-      periodoDias: parseInt(periodoDias, 10) || 0,
-      agua: parseInt(agua, 10) || 0,
-      aduboNitrogenio: parseInt(nitrogenio, 10) || 0,
-      aduboFosforo: parseInt(fosforo, 10) || 0,
-      aduboPotassio: parseInt(potassio, 10) || 0,
-      tempoCicloDias: parseInt(cicloDias, 10) || 0,
-    };
+      phSolo,
+      dataPlantioInicio,
+      dataPlantioFim,
+      periodoDias,
+      mmAgua,
+      aduboNitrogenio,
+      aduboFosforo,
+      aduboPotassio,
+      tempoCicloDias,
+      densidadePlantio,
+      densidadeColheita,
+    ];
 
+    if (requiredFields.some((field) => !field)) {
+      Alert.alert(
+        "Erro",
+        "Por favor, preencha todos os campos obrigatórios (*)."
+      );
+      return;
+    }
+
+    setIsLoading(true);
     try {
       const token = await AsyncStorage.getItem("@TerraManager:token");
-      if (!token) {
-        Alert.alert(
-          "Erro de Autenticação",
-          "Seu token não foi encontrado. Por favor, faça login novamente."
-        );
-        return;
-      }
-      const API_BASE_URL = "http://192.168.3.40:3000";
-      const response = await fetch(`${API_BASE_URL}/cultivar`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(cultivoData),
-      });
+      if (!token) throw new Error("Sessão expirada. Faça login novamente.");
 
-      if (response.ok) {
-        Alert.alert("Sucesso!", "O cultivo foi cadastrado no banco de dados.");
-        navigation.goBack();
-      } else {
-        const errorData = await response.json();
-        Alert.alert(
-          "Erro ao Salvar",
-          errorData.message || "Não foi possível cadastrar o cultivo."
-        );
-      }
-    } catch (error) {
-      console.error("Erro de conexão:", error);
-      Alert.alert(
-        "Erro de Conexão",
-        "Não foi possível se conectar ao servidor."
-      );
+      const cultivarData = {
+        nomeCientifico,
+        nomePopular,
+        tipoPlanta,
+        tipoSolo,
+        phSolo: parseFloat(phSolo.replace(",", ".")) || 0,
+        dataPlantioInicio: toAPIDate(dataPlantioInicio),
+        dataPlantioFim: toAPIDate(dataPlantioFim),
+        periodoDias: parseInt(periodoDias) || 0,
+        mmAgua: parseInt(mmAgua) || 0,
+        aduboNitrogenio: parseInt(aduboNitrogenio) || 0,
+        aduboFosforo: parseInt(aduboFosforo) || 0,
+        aduboPotassio: parseInt(aduboPotassio) || 0,
+        tempoCicloDias: parseInt(tempoCicloDias) || 0,
+        densidadePlantio: parseInt(densidadePlantio) || 0,
+        densidadeColheita: parseInt(densidadeColheita) || 0,
+        observacao,
+      };
+
+      await createCultivar(cultivarData, token);
+      Alert.alert("Sucesso!", "Cultivar cadastrado com sucesso.");
+      navigation.goBack();
+    } catch (error: any) {
+      Alert.alert("Erro ao Cadastrar", error.message);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
     <KeyboardAvoidingView
-      style={styles.keyboardAvoidingContainer}
+      style={{ flex: 1 }}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <View style={styles.container}>
@@ -174,174 +145,199 @@ export default function AddCultivoScreen() {
 
         <ScrollView
           contentContainerStyle={styles.formContent}
-          keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
         >
-          <Text style={styles.inputLabel}>Nome Científico</Text>
+          <Text style={styles.sectionTitle}>Informações Gerais</Text>
+          <Text style={styles.inputLabel}>Nome Científico *</Text>
           <TextInput
             style={styles.input}
             value={nomeCientifico}
             onChangeText={setNomeCientifico}
+            placeholder="Ex: Glycine max"
           />
-          <Text style={styles.inputLabel}>Nome Popular</Text>
+          <Text style={styles.inputLabel}>Nome Popular *</Text>
           <TextInput
             style={styles.input}
             value={nomePopular}
             onChangeText={setNomePopular}
+            placeholder="Ex: Soja"
           />
 
           <View style={styles.row}>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Tipo de Planta</Text>
-              <TextInput
-                style={styles.input}
-                value={tipoPlanta}
-                onChangeText={setTipoPlanta}
+              <Text style={styles.inputLabel}>Tipo de Planta *</Text>
+              <CustomPicker
+                selectedValue={tipoPlanta}
+                onValueChange={(value) => setTipoPlanta(value)}
+                options={[
+                  { label: "Soja", value: "SOJA" },
+                  { label: "Milho", value: "MILHO" },
+                ]}
+                placeholder="Selecione..."
               />
             </View>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Tipo de Solo</Text>
+              <Text style={styles.inputLabel}>Tipo de Solo *</Text>
               <CustomPicker
                 selectedValue={tipoSolo}
-                onValueChange={setTipoSolo}
-                options={tiposDeSoloDisponiveis}
-                placeholder="Selecione o tipo de solo..."
+                onValueChange={(value) => setTipoSolo(value)}
+                options={[
+                  { label: "Latossolo", value: "LATOSSOLO" },
+                  { label: "Argissolo", value: "ARGISSOLO" },
+                ]}
+                placeholder="Selecione..."
               />
             </View>
           </View>
 
-          <Text style={styles.inputLabel}>pH do Solo</Text>
-          <TextInput
-            style={styles.input}
-            value={phSolo}
-            onChangeText={setPhSolo}
-            keyboardType="numeric"
-            placeholder="0"
-          />
-
+          <Text style={styles.sectionTitle}>Ciclo e Plantio</Text>
           <View style={styles.row}>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Plantio Início</Text>
+              <Text style={styles.inputLabel}>Início do Plantio *</Text>
               <TextInput
                 style={styles.input}
-                value={plantioInicio}
-                onChangeText={(text) => setPlantioInicio(maskDate(text))}
+                value={dataPlantioInicio}
+                onChangeText={(text) => setDataPlantioInicio(maskDate(text))}
                 keyboardType="numeric"
-                placeholder="dd/mm/aaaa"
+                placeholder="DD/MM/AAAA"
                 maxLength={10}
               />
             </View>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Plantio Fim</Text>
+              <Text style={styles.inputLabel}>Fim do Plantio *</Text>
               <TextInput
                 style={styles.input}
-                value={plantioFim}
-                onChangeText={(text) => setPlantioFim(maskDate(text))}
+                value={dataPlantioFim}
+                onChangeText={(text) => setDataPlantioFim(maskDate(text))}
                 keyboardType="numeric"
-                placeholder="dd/mm/aaaa"
+                placeholder="DD/MM/AAAA"
                 maxLength={10}
               />
             </View>
           </View>
-
           <View style={styles.row}>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Período (dias)</Text>
+              <Text style={styles.inputLabel}>Período Total (dias) *</Text>
               <TextInput
                 style={styles.input}
                 value={periodoDias}
                 onChangeText={setPeriodoDias}
                 keyboardType="numeric"
-                placeholder="0"
+                placeholder="Ex: 120"
               />
             </View>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Água (mm)</Text>
+              <Text style={styles.inputLabel}>Tempo de Ciclo (dias) *</Text>
               <TextInput
                 style={styles.input}
-                value={agua}
-                onChangeText={setAgua}
+                value={tempoCicloDias}
+                onChangeText={setTempoCicloDias}
                 keyboardType="numeric"
-                placeholder="0"
+                placeholder="Ex: 150"
               />
             </View>
           </View>
 
+          <Text style={styles.sectionTitle}>Necessidades e Adubação</Text>
           <View style={styles.row}>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>N (kg/ha)</Text>
+              <Text style={styles.inputLabel}>Água (mm) *</Text>
               <TextInput
                 style={styles.input}
-                value={nitrogenio}
-                onChangeText={setNitrogenio}
+                value={mmAgua}
+                onChangeText={setMmAgua}
                 keyboardType="numeric"
-                placeholder="0"
+                placeholder="Ex: 800"
               />
             </View>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>P (kg/ha)</Text>
+              <Text style={styles.inputLabel}>pH Ideal do Solo *</Text>
               <TextInput
                 style={styles.input}
-                value={fosforo}
-                onChangeText={setFosforo}
+                value={phSolo}
+                onChangeText={setPhSolo}
                 keyboardType="numeric"
-                placeholder="0"
+                placeholder="Ex: 6.5"
+              />
+            </View>
+          </View>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <Text style={styles.inputLabel}>Nitrogênio (N) *</Text>
+              <TextInput
+                style={styles.input}
+                value={aduboNitrogenio}
+                onChangeText={setAduboNitrogenio}
+                keyboardType="numeric"
+                placeholder="kg/ha"
               />
             </View>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>K (kg/ha)</Text>
+              <Text style={styles.inputLabel}>Fósforo (P) *</Text>
               <TextInput
                 style={styles.input}
-                value={potassio}
-                onChangeText={setPotassio}
+                value={aduboFosforo}
+                onChangeText={setAduboFosforo}
                 keyboardType="numeric"
-                placeholder="0"
+                placeholder="kg/ha"
+              />
+            </View>
+            <View style={styles.column}>
+              <Text style={styles.inputLabel}>Potássio (K) *</Text>
+              <TextInput
+                style={styles.input}
+                value={aduboPotassio}
+                onChangeText={setAduboPotassio}
+                keyboardType="numeric"
+                placeholder="kg/ha"
               />
             </View>
           </View>
 
-          <Text style={styles.inputLabel}>Ciclo (dias)</Text>
-          <TextInput
-            style={styles.input}
-            value={cicloDias}
-            onChangeText={setCicloDias}
-            keyboardType="numeric"
-            placeholder="0"
-          />
+          <Text style={styles.sectionTitle}>Densidade</Text>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <Text style={styles.inputLabel}>Plantio (plantas/ha) *</Text>
+              <TextInput
+                style={styles.input}
+                value={densidadePlantio}
+                onChangeText={setDensidadePlantio}
+                keyboardType="numeric"
+                placeholder="Ex: 300000"
+              />
+            </View>
+            <View style={styles.column}>
+              <Text style={styles.inputLabel}>Colheita (plantas/ha) *</Text>
+              <TextInput
+                style={styles.input}
+                value={densidadeColheita}
+                onChangeText={setDensidadeColheita}
+                keyboardType="numeric"
+                placeholder="Ex: 280000"
+              />
+            </View>
+          </View>
 
-          <Text style={styles.inputLabel}>Observação</Text>
+          <Text style={styles.sectionTitle}>Observações</Text>
           <TextInput
             style={[styles.input, { height: 100, textAlignVertical: "top" }]}
             value={observacao}
             onChangeText={setObservacao}
-            multiline={true}
+            multiline
+            placeholder="Observações adicionais..."
           />
-
-          <View style={styles.row}>
-            <View style={styles.column}>
-              <Text style={styles.inputLabel}>Praga</Text>
-              <CustomPicker
-                selectedValue={praga}
-                onValueChange={setPraga}
-                options={pragasDisponiveis}
-                placeholder="Selecione a praga..."
-              />
-            </View>
-            <View style={styles.column}>
-              <Text style={styles.inputLabel}>Fornecedor</Text>
-              <TextInput
-                style={styles.input}
-                value={fornecedor}
-                onChangeText={setFornecedor}
-              />
-            </View>
-          </View>
 
           <TouchableOpacity
             style={styles.createButton}
-            onPress={handleCreateCultivo}
+            onPress={handleCreate}
+            disabled={isLoading}
           >
-            <Text style={styles.createButtonText}>CADASTRAR</Text>
+            {isLoading ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <Text style={styles.createButtonText}>CADASTRAR CULTIVAR</Text>
+            )}
           </TouchableOpacity>
         </ScrollView>
       </View>
@@ -350,25 +346,39 @@ export default function AddCultivoScreen() {
 }
 
 const styles = StyleSheet.create({
-  keyboardAvoidingContainer: { flex: 1 },
   container: { flex: 1, backgroundColor: colors.primary },
   header: {
-    backgroundColor: colors.primary,
-    padding: 15,
-    paddingTop: Platform.OS === "ios" ? 44 : 50,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    paddingHorizontal: 15,
+    paddingTop: Platform.OS === "ios" ? 50 : 40,
+    paddingBottom: 15,
+    backgroundColor: colors.primary,
     borderBottomWidth: 1,
-    borderBottomColor: colors.white,
+    borderBottomColor: "rgba(255,255,255,0.2)",
   },
   backButton: { padding: 5 },
-  headerTitle: { fontSize: 18, fontWeight: "bold", color: colors.white },
-  formContent: { padding: 20, backgroundColor: "#1E322D", flexGrow: 1 },
+  headerTitle: { color: colors.white, fontSize: 20, fontWeight: "bold" },
+  formContent: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+    backgroundColor: "#1E322D",
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: colors.white,
+    marginTop: 25,
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.secondary,
+    paddingBottom: 5,
+  },
   inputLabel: {
     fontSize: 16,
     color: colors.white,
-    marginBottom: 5,
+    marginBottom: 8,
     marginTop: 15,
   },
   input: {
@@ -376,19 +386,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 15,
     height: 50,
-    justifyContent: "center",
     fontSize: 16,
     color: colors.textPrimary,
   },
-  row: { flexDirection: "row", justifyContent: "space-between", gap: 10 },
-  column: { flex: 1 },
   createButton: {
-    backgroundColor: "#4B7940",
+    backgroundColor: colors.secondary,
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: "center",
     marginTop: 30,
-    marginBottom: 40,
+    height: 54,
+    justifyContent: "center",
   },
   createButtonText: { color: colors.white, fontSize: 18, fontWeight: "bold" },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  column: {
+    flex: 1,
+    marginHorizontal: 5,
+  },
 });

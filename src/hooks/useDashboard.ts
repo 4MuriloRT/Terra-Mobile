@@ -40,6 +40,7 @@ export const useDashboard = () => {
         ]);
 
         let climaParaExibir = null;
+        // ✅ CORREÇÃO: Acessa 'previsaoProximosDias' de forma segura com '?.'
         if (climaData?.previsaoProximosDias?.length > 0) {
           const today = new Date().toISOString().split("T")[0];
           climaParaExibir = climaData.previsaoProximosDias.find(
@@ -51,9 +52,16 @@ export const useDashboard = () => {
           }
         }
         setClima(climaParaExibir);
-
+        
+        // Define a cotação (já era seguro, mas mantemos o padrão)
         setCotacao(cotacaoData);
-        setNoticias(noticiaData.articles || []);
+
+        // ✅ **CORREÇÃO PRINCIPAL AQUI**
+        // Acessa 'articles' de forma segura com '?.'.
+        // Se 'noticiaData' for nulo ou indefinido, a expressão retorna undefined,
+        // e o '|| []' garante que 'noticias' será sempre um array.
+        setNoticias(noticiaData?.articles || []);
+
       } catch (err: any) {
         setError(err.message || "Ocorreu um erro ao carregar os dados.");
         console.error("Erro no useDashboard:", err);
