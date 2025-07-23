@@ -11,6 +11,7 @@ export type Farm = {
   uf: string;
   ativo: boolean;
 };
+
 export type Plantio = {
   id: string;
   dataPlantio: string;
@@ -21,29 +22,28 @@ export type Plantio = {
     nomePopular: string;
   };
 };
-export type Cultivar = {
+
+export interface Cultivar {
   id: string;
   nomeCientifico: string;
   nomePopular: string;
   tipoPlanta: string;
   tipoSolo: string;
-  fornecedor: string;
-  praga: string;
   observacao: string;
   phSolo: number;
   dataPlantioInicio: string;
   dataPlantioFim: string;
   periodoDias: number;
-  agua: number; // O nome correto é 'agua'
+  mmAgua?: number;
   aduboNitrogenio: number;
   aduboFosforo: number;
   aduboPotassio: number;
+  aduboCalcio: number;
+  aduboMagnesio: number;
   tempoCicloDias: number;
-  // ✅ CAMPOS ADICIONADOS
   densidadePlantio?: number;
   densidadeColheita?: number;
-  mmAgua?: number; // Adicionando para consistência com o DTO
-};
+}
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -51,7 +51,7 @@ export type RootStackParamList = {
   Register: undefined;
   DashboardScreen: undefined;
   FazendasScreen: undefined;
-  AddFarmScreen: { farm?: Farm };
+  AddFarmScreen: { farm?: Farm }; // Alterado para Farm
   AddCultivoScreen: { cultivar?: Cultivar };
   CultivosScreen: undefined;
   PlantioScreen: undefined;

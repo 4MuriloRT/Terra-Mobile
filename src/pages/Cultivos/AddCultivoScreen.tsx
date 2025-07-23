@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -12,41 +12,82 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useNavigation } from "@react-navigation/native";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { RootStackParamList } from "../../screens/Types";
+import { RootStackParamList, Cultivar } from "../../screens/Types";
 import { colors } from "../../components/Colors";
-import { createCultivar } from "../../services/api";
+import { createCultivar, updateCultivar } from "../../services/api";
 import { CustomPicker } from "../../components/CustomPicker";
 
 type NavigationProp = StackNavigationProp<
   RootStackParamList,
   "AddCultivoScreen"
 >;
+type AddCultivoScreenRouteProp = RouteProp<
+  RootStackParamList,
+  "AddCultivoScreen"
+>;
 
-// Função para formatar a data automaticamente no formato DD/MM/AAAA
+// --- FUNÇÕES DE FORMATAÇÃO DE DATA ---
 const maskDate = (text: string) => {
-  let digits = text.replace(/\D/g, "");
-  digits = digits.slice(0, 8);
+  let digits = text.replace(/\D/g, "").slice(0, 8);
   if (digits.length > 4)
     return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
   if (digits.length > 2) return `${digits.slice(0, 2)}/${digits.slice(2)}`;
   return digits;
 };
 
-// Função para converter data DD/MM/AAAA para formato AAAA-MM-DD
 const toAPIDate = (dateString: string) => {
   if (!/^\d{2}\/\d{2}\/\d{4}$/.test(dateString)) return null;
   const [day, month, year] = dateString.split("/");
-  return `${year}-${month}-${day}`;
+  return new Date(
+    Date.UTC(Number(year), Number(month) - 1, Number(day))
+  ).toISOString();
 };
+
+const fromAPIDate = (dateString: string) => {
+  if (!dateString || !/^\d{4}-\d{2}-\d{2}/.test(dateString)) return "";
+  const [year, month, day] = dateString.split("T")[0].split("-");
+  return `${day}/${month}/${year}`;
+};
+
+// --- OPÇÕES PARA OS SELETORES ---
+const tipoPlantaOptions = [
+  { label: "Soja", value: "SOJA" },
+  { label: "Milho", value: "MILHO" },
+  { label: "Feijão", value: "FEIJAO" },
+  { label: "Arroz", value: "ARROZ" },
+  { label: "Café", value: "CAFE" },
+  { label: "Algodão", value: "ALGODAO" },
+  { label: "Banana", value: "BANANA" },
+  { label: "Laranja", value: "LARANJA" },
+];
+
+const tipoSoloOptions = [
+  { label: "Arenoso", value: "ARENOSO" },
+  { label: "Argiloso", value: "ARGILOSO" },
+  { label: "Siltoso", value: "SILTOSO" },
+  { label: "Misto", value: "MISTO" },
+  { label: "Humífero", value: "HUMIFERO" },
+  { label: "Calcário", value: "CALCARIO" },
+  { label: "Gleissolo", value: "GLEISSOLO" },
+  { label: "Latossolo", value: "LATOSSOLO" },
+  { label: "Cambissolo", value: "CAMBISSOLO" },
+  { label: "Organossolo", value: "ORGANOSSOLO" },
+  { label: "Neossolo", value: "NEOSSOLO" },
+  { label: "Planossolo", value: "PLANOSSOLO" },
+  { label: "Vertissolo", value: "VERTISSOLO" },
+];
 
 export default function AddCultivoScreen() {
   const navigation = useNavigation<NavigationProp>();
-  const [isLoading, setIsLoading] = useState(false);
+  const route = useRoute<AddCultivoScreenRouteProp>();
+  const cultivarToEdit = route.params?.cultivar;
+  const isEditMode = !!cultivarToEdit;
 
-  // Estados para todos os campos do formulário
+  const [isLoading, setIsLoading] = useState(false);
+  // --- Estados do formulário ---
   const [nomeCientifico, setNomeCientifico] = useState("");
   const [nomePopular, setNomePopular] = useState("");
   const [tipoPlanta, setTipoPlanta] = useState("");
@@ -59,68 +100,76 @@ export default function AddCultivoScreen() {
   const [aduboNitrogenio, setAduboNitrogenio] = useState("");
   const [aduboFosforo, setAduboFosforo] = useState("");
   const [aduboPotassio, setAduboPotassio] = useState("");
+  const [aduboCalcio, setAduboCalcio] = useState(""); // Adicionado
+  const [aduboMagnesio, setAduboMagnesio] = useState(""); // Adicionado
   const [tempoCicloDias, setTempoCicloDias] = useState("");
   const [densidadePlantio, setDensidadePlantio] = useState("");
   const [densidadeColheita, setDensidadeColheita] = useState("");
   const [observacao, setObservacao] = useState("");
 
-  const handleCreate = async () => {
-    // Validação mais completa baseada no DTO
-    const requiredFields = [
-      nomeCientifico,
-      nomePopular,
-      tipoPlanta,
-      tipoSolo,
-      phSolo,
-      dataPlantioInicio,
-      dataPlantioFim,
-      periodoDias,
-      mmAgua,
-      aduboNitrogenio,
-      aduboFosforo,
-      aduboPotassio,
-      tempoCicloDias,
-      densidadePlantio,
-      densidadeColheita,
-    ];
-
-    if (requiredFields.some((field) => !field)) {
-      Alert.alert(
-        "Erro",
-        "Por favor, preencha todos os campos obrigatórios (*)."
-      );
-      return;
+  useEffect(() => {
+    if (isEditMode && cultivarToEdit) {
+      setNomeCientifico(cultivarToEdit.nomeCientifico || "");
+      setNomePopular(cultivarToEdit.nomePopular || "");
+      setTipoPlanta(cultivarToEdit.tipoPlanta || "");
+      setTipoSolo(cultivarToEdit.tipoSolo || "");
+      setPhSolo(cultivarToEdit.phSolo?.toString() || "");
+      setDataPlantioInicio(fromAPIDate(cultivarToEdit.dataPlantioInicio));
+      setDataPlantioFim(fromAPIDate(cultivarToEdit.dataPlantioFim));
+      setPeriodoDias(cultivarToEdit.periodoDias?.toString() || "");
+      setMmAgua(cultivarToEdit.mmAgua?.toString() || "");
+      setAduboNitrogenio(cultivarToEdit.aduboNitrogenio?.toString() || "");
+      setAduboFosforo(cultivarToEdit.aduboFosforo?.toString() || "");
+      setAduboPotassio(cultivarToEdit.aduboPotassio?.toString() || "");
+      setAduboCalcio(cultivarToEdit.aduboCalcio?.toString() || ""); // Adicionado
+      setAduboMagnesio(cultivarToEdit.aduboMagnesio?.toString() || ""); // Adicionado
+      setTempoCicloDias(cultivarToEdit.tempoCicloDias?.toString() || "");
+      setDensidadePlantio(cultivarToEdit.densidadePlantio?.toString() || "");
+      setDensidadeColheita(cultivarToEdit.densidadeColheita?.toString() || "");
+      setObservacao(cultivarToEdit.observacao || "");
     }
+  }, [isEditMode, cultivarToEdit]);
 
+  const handleCreateOrUpdate = async () => {
     setIsLoading(true);
     try {
       const token = await AsyncStorage.getItem("@TerraManager:token");
-      if (!token) throw new Error("Sessão expirada. Faça login novamente.");
+      if (!token) throw new Error("Sessão expirada.");
 
       const cultivarData = {
         nomeCientifico,
         nomePopular,
         tipoPlanta,
         tipoSolo,
-        phSolo: parseFloat(phSolo.replace(",", ".")) || 0,
-        dataPlantioInicio: toAPIDate(dataPlantioInicio),
-        dataPlantioFim: toAPIDate(dataPlantioFim),
-        periodoDias: parseInt(periodoDias) || 0,
-        mmAgua: parseInt(mmAgua) || 0,
-        aduboNitrogenio: parseInt(aduboNitrogenio) || 0,
-        aduboFosforo: parseInt(aduboFosforo) || 0,
-        aduboPotassio: parseInt(aduboPotassio) || 0,
-        tempoCicloDias: parseInt(tempoCicloDias) || 0,
-        densidadePlantio: parseInt(densidadePlantio) || 0,
-        densidadeColheita: parseInt(densidadeColheita) || 0,
         observacao,
+        phSolo: parseFloat(phSolo.replace(",", ".")) || 0,
+        dataPlantioInicio: toAPIDate(dataPlantioInicio)!,
+        dataPlantioFim: toAPIDate(dataPlantioFim)!,
+        periodoDias: parseInt(periodoDias, 10) || 0,
+        mmAgua: parseInt(mmAgua, 10) || 0,
+        aduboNitrogenio: parseInt(aduboNitrogenio, 10) || 0,
+        aduboFosforo: parseInt(aduboFosforo, 10) || 0,
+        aduboPotassio: parseInt(aduboPotassio, 10) || 0,
+        aduboCalcio: parseInt(aduboCalcio, 10) || 0, // Adicionado
+        aduboMagnesio: parseInt(aduboMagnesio, 10) || 0, // Adicionado
+        tempoCicloDias: parseInt(tempoCicloDias, 10) || 0,
+        densidadePlantio: parseInt(densidadePlantio, 10) || 0,
+        densidadeColheita: parseInt(densidadeColheita, 10) || 0,
+        // Campos removidos que eram obrigatórios no tipo
+        fornecedor: "",
+        praga: "",
       };
 
-      await createCultivar(cultivarData, token);
-      Alert.alert("Sucesso!", "Cultivar cadastrado com sucesso.");
+      if (isEditMode && cultivarToEdit) {
+        await updateCultivar(cultivarToEdit.id, cultivarData, token);
+        Alert.alert("Sucesso!", "Cultivar atualizado com sucesso.");
+      } else {
+        await createCultivar(cultivarData as Omit<Cultivar, "id">, token);
+        Alert.alert("Sucesso!", "Cultivar cadastrado com sucesso.");
+      }
       navigation.goBack();
     } catch (error: any) {
-      Alert.alert("Erro ao Cadastrar", error.message);
+      Alert.alert("Erro ao Salvar", error.message);
     } finally {
       setIsLoading(false);
     }
@@ -139,7 +188,9 @@ export default function AddCultivoScreen() {
           >
             <Ionicons name="arrow-back" size={24} color={colors.white} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Adicionar Cultivar</Text>
+          <Text style={styles.headerTitle}>
+            {isEditMode ? "Editar Cultivar" : "Adicionar Cultivar"}
+          </Text>
           <View style={{ width: 24 }} />
         </View>
 
@@ -149,43 +200,44 @@ export default function AddCultivoScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <Text style={styles.sectionTitle}>Informações Gerais</Text>
-          <Text style={styles.inputLabel}>Nome Científico *</Text>
-          <TextInput
-            style={styles.input}
-            value={nomeCientifico}
-            onChangeText={setNomeCientifico}
-            placeholder="Ex: Glycine max"
-          />
-          <Text style={styles.inputLabel}>Nome Popular *</Text>
-          <TextInput
-            style={styles.input}
-            value={nomePopular}
-            onChangeText={setNomePopular}
-            placeholder="Ex: Soja"
-          />
-
           <View style={styles.row}>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Tipo de Planta *</Text>
+              <Text style={styles.inputLabel}>Nome Científico</Text>
+              <TextInput
+                style={styles.input}
+                value={nomeCientifico}
+                onChangeText={setNomeCientifico}
+                placeholder="Ex: Glycine max"
+              />
+            </View>
+            <View style={styles.column}>
+              <Text style={styles.inputLabel}>Nome Popular</Text>
+              <TextInput
+                style={styles.input}
+                value={nomePopular}
+                onChangeText={setNomePopular}
+                placeholder="Ex: Soja"
+              />
+            </View>
+          </View>
+
+          <Text style={styles.sectionTitle}>Especificações da Planta</Text>
+          <View style={styles.row}>
+            <View style={styles.column}>
+              <Text style={styles.inputLabel}>Tipo de Planta</Text>
               <CustomPicker
                 selectedValue={tipoPlanta}
-                onValueChange={(value) => setTipoPlanta(value)}
-                options={[
-                  { label: "Soja", value: "SOJA" },
-                  { label: "Milho", value: "MILHO" },
-                ]}
+                onValueChange={setTipoPlanta}
+                options={tipoPlantaOptions}
                 placeholder="Selecione..."
               />
             </View>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Tipo de Solo *</Text>
+              <Text style={styles.inputLabel}>Tipo de Solo Ideal</Text>
               <CustomPicker
                 selectedValue={tipoSolo}
-                onValueChange={(value) => setTipoSolo(value)}
-                options={[
-                  { label: "Latossolo", value: "LATOSSOLO" },
-                  { label: "Argissolo", value: "ARGISSOLO" },
-                ]}
+                onValueChange={setTipoSolo}
+                options={tipoSoloOptions}
                 placeholder="Selecione..."
               />
             </View>
@@ -194,7 +246,7 @@ export default function AddCultivoScreen() {
           <Text style={styles.sectionTitle}>Ciclo e Plantio</Text>
           <View style={styles.row}>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Início do Plantio *</Text>
+              <Text style={styles.inputLabel}>Início do Plantio</Text>
               <TextInput
                 style={styles.input}
                 value={dataPlantioInicio}
@@ -205,7 +257,7 @@ export default function AddCultivoScreen() {
               />
             </View>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Fim do Plantio *</Text>
+              <Text style={styles.inputLabel}>Fim do Plantio</Text>
               <TextInput
                 style={styles.input}
                 value={dataPlantioFim}
@@ -218,17 +270,7 @@ export default function AddCultivoScreen() {
           </View>
           <View style={styles.row}>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Período Total (dias) *</Text>
-              <TextInput
-                style={styles.input}
-                value={periodoDias}
-                onChangeText={setPeriodoDias}
-                keyboardType="numeric"
-                placeholder="Ex: 120"
-              />
-            </View>
-            <View style={styles.column}>
-              <Text style={styles.inputLabel}>Tempo de Ciclo (dias) *</Text>
+              <Text style={styles.inputLabel}>Ciclo Total (dias)</Text>
               <TextInput
                 style={styles.input}
                 value={tempoCicloDias}
@@ -237,12 +279,22 @@ export default function AddCultivoScreen() {
                 placeholder="Ex: 150"
               />
             </View>
+            <View style={styles.column}>
+              <Text style={styles.inputLabel}>Janela de Plantio (dias)</Text>
+              <TextInput
+                style={styles.input}
+                value={periodoDias}
+                onChangeText={setPeriodoDias}
+                keyboardType="numeric"
+                placeholder="Ex: 120"
+              />
+            </View>
           </View>
 
           <Text style={styles.sectionTitle}>Necessidades e Adubação</Text>
           <View style={styles.row}>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Água (mm) *</Text>
+              <Text style={styles.inputLabel}>Água (mm)</Text>
               <TextInput
                 style={styles.input}
                 value={mmAgua}
@@ -252,7 +304,7 @@ export default function AddCultivoScreen() {
               />
             </View>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>pH Ideal do Solo *</Text>
+              <Text style={styles.inputLabel}>pH Ideal do Solo</Text>
               <TextInput
                 style={styles.input}
                 value={phSolo}
@@ -262,9 +314,10 @@ export default function AddCultivoScreen() {
               />
             </View>
           </View>
+          <Text style={styles.subSectionTitle}>Adubação (kg/ha)</Text>
           <View style={styles.row}>
-            <View style={styles.column}>
-              <Text style={styles.inputLabel}>Nitrogênio (N) *</Text>
+            <View style={styles.aduboColumn}>
+              <Text style={styles.inputLabel}>N</Text>
               <TextInput
                 style={styles.input}
                 value={aduboNitrogenio}
@@ -273,8 +326,8 @@ export default function AddCultivoScreen() {
                 placeholder="kg/ha"
               />
             </View>
-            <View style={styles.column}>
-              <Text style={styles.inputLabel}>Fósforo (P) *</Text>
+            <View style={styles.aduboColumn}>
+              <Text style={styles.inputLabel}>P</Text>
               <TextInput
                 style={styles.input}
                 value={aduboFosforo}
@@ -283,8 +336,8 @@ export default function AddCultivoScreen() {
                 placeholder="kg/ha"
               />
             </View>
-            <View style={styles.column}>
-              <Text style={styles.inputLabel}>Potássio (K) *</Text>
+            <View style={styles.aduboColumn}>
+              <Text style={styles.inputLabel}>K</Text>
               <TextInput
                 style={styles.input}
                 value={aduboPotassio}
@@ -293,12 +346,33 @@ export default function AddCultivoScreen() {
                 placeholder="kg/ha"
               />
             </View>
+            {/* CAMPOS ADICIONADOS */}
+            <View style={styles.aduboColumn}>
+              <Text style={styles.inputLabel}>Ca</Text>
+              <TextInput
+                style={styles.input}
+                value={aduboCalcio}
+                onChangeText={setAduboCalcio}
+                keyboardType="numeric"
+                placeholder="kg/ha"
+              />
+            </View>
+            <View style={styles.aduboColumn}>
+              <Text style={styles.inputLabel}>Mg</Text>
+              <TextInput
+                style={styles.input}
+                value={aduboMagnesio}
+                onChangeText={setAduboMagnesio}
+                keyboardType="numeric"
+                placeholder="kg/ha"
+              />
+            </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Densidade</Text>
+          <Text style={styles.sectionTitle}>Densidade (plantas/ha)</Text>
           <View style={styles.row}>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Plantio (plantas/ha) *</Text>
+              <Text style={styles.inputLabel}>Densidade de Plantio</Text>
               <TextInput
                 style={styles.input}
                 value={densidadePlantio}
@@ -308,7 +382,7 @@ export default function AddCultivoScreen() {
               />
             </View>
             <View style={styles.column}>
-              <Text style={styles.inputLabel}>Colheita (plantas/ha) *</Text>
+              <Text style={styles.inputLabel}>População na Colheita</Text>
               <TextInput
                 style={styles.input}
                 value={densidadeColheita}
@@ -325,18 +399,20 @@ export default function AddCultivoScreen() {
             value={observacao}
             onChangeText={setObservacao}
             multiline
-            placeholder="Observações adicionais..."
+            placeholder="Resistência a doenças, ciclo da variedade, etc."
           />
 
           <TouchableOpacity
             style={styles.createButton}
-            onPress={handleCreate}
+            onPress={handleCreateOrUpdate}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color={colors.white} />
             ) : (
-              <Text style={styles.createButtonText}>CADASTRAR CULTIVAR</Text>
+              <Text style={styles.createButtonText}>
+                {isEditMode ? "ATUALIZAR CULTIVAR" : "CADASTRAR CULTIVAR"}
+              </Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -370,16 +446,24 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     color: colors.white,
     marginTop: 25,
-    marginBottom: 10,
+    marginBottom: 15,
     borderBottomWidth: 1,
     borderBottomColor: colors.secondary,
     paddingBottom: 5,
   },
-  inputLabel: {
+  subSectionTitle: {
     fontSize: 16,
+    fontWeight: "bold",
+    color: colors.white,
+    marginTop: 20,
+    marginBottom: 10,
+    alignSelf: "center",
+  },
+  inputLabel: {
+    fontSize: 14,
     color: colors.white,
     marginBottom: 8,
-    marginTop: 15,
+    marginTop: 10,
   },
   input: {
     backgroundColor: colors.white,
@@ -394,17 +478,12 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: "center",
-    marginTop: 30,
+    marginTop: 40,
     height: 54,
     justifyContent: "center",
   },
   createButtonText: { color: colors.white, fontSize: 18, fontWeight: "bold" },
-  row: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-  },
-  column: {
-    flex: 1,
-    marginHorizontal: 5,
-  },
+  row: { flexDirection: "row", marginHorizontal: -5 },
+  column: { flex: 1, marginHorizontal: 5 },
+  aduboColumn: { flex: 1, marginHorizontal: 3 },
 });

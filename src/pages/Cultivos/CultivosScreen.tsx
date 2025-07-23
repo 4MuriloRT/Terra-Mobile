@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Platform,
   ActivityIndicator,
+  RefreshControl,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
@@ -17,7 +18,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { RootStackParamList, Cultivar } from "../../screens/Types";
 import { colors } from "../../components/Colors";
-import { fetchCultivares } from "../../services/api";
+import { fetchCultivares, deleteCultivar } from "../../services/api";
 
 type CultivosScreenNavigationProp = StackNavigationProp<
   RootStackParamList,
@@ -28,15 +29,15 @@ export default function CultivosScreen() {
   const navigation = useNavigation<CultivosScreenNavigationProp>();
   const [cultivares, setCultivares] = useState<Cultivar[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const loadCultivares = async () => {
     try {
-      setIsLoading(true);
       const token = await AsyncStorage.getItem("@TerraManager:token");
       if (!token) throw new Error("Token não encontrado.");
 
       const response = await fetchCultivares(token);
-      setCultivares(response.data || []); // Acessa o array 'data' da resposta da API
+      setCultivares(response.data || []);
     } catch (error: any) {
       Alert.alert(
         "Erro",
@@ -44,28 +45,44 @@ export default function CultivosScreen() {
       );
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
-  // Recarrega os dados sempre que a tela entra em foco
   useFocusEffect(
     useCallback(() => {
+      setIsLoading(true);
       loadCultivares();
     }, [])
   );
+  const onRefresh = useCallback(() => {
+    setIsRefreshing(true);
+    loadCultivares();
+  }, []);
 
-  const handleDelete = (cultivarId: string) => {
+  const handleDelete = (cultivar: Cultivar) => {
     Alert.alert(
       "Confirmar Exclusão",
-      "Tem certeza que deseja excluir este cultivar?",
+      `Tem certeza que deseja excluir o cultivar "${cultivar.nomePopular}"?`,
       [
         { text: "Cancelar", style: "cancel" },
         {
           text: "Excluir",
           style: "destructive",
-          onPress: () => {
-            // Lógica para chamar a API de exclusão virá aqui
-            console.log("Excluir cultivar com ID:", cultivarId);
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem("@TerraManager:token");
+              if (!token) throw new Error("Token não encontrado.");
+
+              await deleteCultivar(cultivar.id, token);
+              Alert.alert("Sucesso!", "Cultivar excluído com sucesso.");
+              loadCultivares();
+            } catch (error: any) {
+              Alert.alert(
+                "Erro ao Excluir",
+                error.message || "Não foi possível excluir o cultivar."
+              );
+            }
           },
         },
       ]
@@ -73,41 +90,36 @@ export default function CultivosScreen() {
   };
 
   const renderItem = ({ item }: { item: Cultivar }) => (
-    <View style={styles.tableRow}>
-      <Text style={[styles.cellText, { flex: 2 }]}>{item.nomeCientifico}</Text>
-      <Text style={[styles.cellText, { flex: 2 }]}>{item.nomePopular}</Text>
-      <Text style={[styles.cellText, { flex: 1.5 }]}>{item.tipoPlanta}</Text>
-      <Text style={[styles.cellText, { flex: 1.5 }]}>{item.tipoSolo}</Text>
-      <View style={styles.actionsCell}>
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <Ionicons name="leaf-outline" size={24} color={colors.secondary} />
+        <Text style={styles.cardTitle}>{item.nomePopular}</Text>
+      </View>
+      <Text style={styles.cardSubtitle}>{item.nomeCientifico}</Text>
+
+      <View style={styles.cardInfoRow}>
+        <Text style={styles.cardInfoLabel}>Tipo de Planta:</Text>
+        <Text style={styles.cardInfoValue}>{item.tipoPlanta}</Text>
+      </View>
+
+      <View style={styles.cardActions}>
         <TouchableOpacity
-          style={styles.actionButton}
+          style={[styles.actionButton, styles.viewButton]}
           onPress={() =>
             navigation.navigate("AddCultivoScreen", { cultivar: item })
           }
         >
-          <Ionicons name="eye-outline" size={22} color="#3498db" />
+          <Ionicons name="eye-outline" size={18} color={colors.white} />
+          <Text style={styles.actionButtonText}>Visualizar</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={styles.actionButton}
-          onPress={() => handleDelete(item.id)}
+          style={[styles.actionButton, styles.deleteButton]}
+          onPress={() => handleDelete(item)}
         >
-          <Ionicons name="trash-outline" size={22} color="#e74c3c" />
+          <Ionicons name="trash-outline" size={18} color={colors.white} />
+          <Text style={styles.actionButtonText}>Deletar</Text>
         </TouchableOpacity>
       </View>
-    </View>
-  );
-
-  const ListEmptyComponent = () => (
-    <View style={styles.emptyContainer}>
-      <Ionicons
-        name="nutrition-outline"
-        size={60}
-        color="rgba(255,255,255,0.3)"
-      />
-      <Text style={styles.emptyText}>Nenhum cultivar encontrado.</Text>
-      <Text style={styles.emptySubText}>
-        Clique em 'Novo Cultivar' para começar.
-      </Text>
     </View>
   );
 
@@ -125,30 +137,39 @@ export default function CultivosScreen() {
       </View>
 
       <View style={styles.content}>
-        <View style={styles.tableHeader}>
-          <Text style={[styles.headerText, { flex: 2 }]}>Nome Científico</Text>
-          <Text style={[styles.headerText, { flex: 2 }]}>Nome Popular</Text>
-          <Text style={[styles.headerText, { flex: 1.5 }]}>Tipo Planta</Text>
-          <Text style={[styles.headerText, { flex: 1.5 }]}>Tipo Solo</Text>
-          <Text style={[styles.headerText, { flex: 1, textAlign: "center" }]}>
-            Ações
-          </Text>
-        </View>
-
         {isLoading ? (
           <ActivityIndicator
             size="large"
             color={colors.white}
-            style={{ marginTop: 20 }}
+            style={{ marginTop: 50 }}
           />
         ) : (
           <FlatList
             data={cultivares}
             renderItem={renderItem}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.id}
             showsVerticalScrollIndicator={false}
-            ListEmptyComponent={ListEmptyComponent}
-            contentContainerStyle={{ paddingTop: 10 }}
+            ListEmptyComponent={
+              <View style={styles.emptyContainer}>
+                <Ionicons
+                  name="nutrition-outline"
+                  size={60}
+                  color="rgba(255,255,255,0.3)"
+                />
+                <Text style={styles.emptyText}>
+                  Nenhum cultivar encontrado.
+                </Text>
+              </View>
+            }
+            contentContainerStyle={{ paddingBottom: 20 }}
+            refreshControl={
+              <RefreshControl
+                refreshing={isRefreshing}
+                onRefresh={onRefresh}
+                colors={[colors.secondary]}
+                tintColor={colors.secondary}
+              />
+            }
           />
         )}
       </View>
@@ -157,24 +178,17 @@ export default function CultivosScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#1E322D",
-  },
+  container: { flex: 1, backgroundColor: "#1E322D" },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingVertical: 15,
     backgroundColor: colors.primary,
     paddingTop: Platform.OS === "android" ? 40 : 15,
   },
-  headerTitle: {
-    color: colors.white,
-    fontSize: 22,
-    fontWeight: "bold",
-  },
+  headerTitle: { color: colors.white, fontSize: 22, fontWeight: "bold" },
   addButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -183,51 +197,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
   },
-  addButtonText: {
-    color: colors.white,
-    marginLeft: 5,
-    fontWeight: "bold",
-  },
-  content: {
-    flex: 1,
-    paddingHorizontal: 15,
-  },
-  tableHeader: {
-    flexDirection: "row",
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255, 255, 255, 0.2)",
-    paddingBottom: 10,
-    marginTop: 10,
-    paddingHorizontal: 10,
-  },
-  headerText: {
-    color: colors.white,
-    fontWeight: "bold",
-    fontSize: 12,
-    textTransform: "uppercase",
-  },
-  tableRow: {
-    flexDirection: "row",
-    alignItems: "center",
+  addButtonText: { color: colors.white, marginLeft: 5, fontWeight: "bold" },
+  content: { flex: 1, paddingHorizontal: 15, paddingTop: 10 },
+  card: {
     backgroundColor: "rgba(255, 255, 255, 0.05)",
-    borderRadius: 8,
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    marginBottom: 10,
+    borderRadius: 12,
+    padding: 15,
+    marginBottom: 15,
   },
-  cellText: {
+  cardHeader: { flexDirection: "row", alignItems: "center", marginBottom: 5 },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
     color: colors.white,
-    fontSize: 14,
+    marginLeft: 10,
   },
-  actionsCell: {
-    flex: 1,
+  cardSubtitle: {
+    fontSize: 14,
+    color: "rgba(255,255,255,0.7)",
+    marginBottom: 15,
+    fontStyle: "italic",
+  },
+  cardInfoRow: {
     flexDirection: "row",
-    justifyContent: "center",
-    gap: 15,
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  cardInfoLabel: { fontSize: 14, color: "rgba(255,255,255,0.6)" },
+  cardInfoValue: { fontSize: 14, color: colors.white, fontWeight: "600" },
+  cardActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.1)",
+    marginTop: 15,
+    paddingTop: 15,
   },
   actionButton: {
-    padding: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    marginLeft: 10,
   },
+  actionButtonText: {
+    color: colors.white,
+    marginLeft: 6,
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  viewButton: { backgroundColor: "#3498db" },
+  deleteButton: { backgroundColor: "#e74c3c" },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
@@ -240,11 +261,5 @@ const styles = StyleSheet.create({
     marginTop: 15,
     fontSize: 18,
     fontWeight: "bold",
-  },
-  emptySubText: {
-    color: "rgba(255,255,255,0.7)",
-    textAlign: "center",
-    marginTop: 5,
-    fontSize: 14,
   },
 });

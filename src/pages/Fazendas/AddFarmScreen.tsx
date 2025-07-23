@@ -15,6 +15,7 @@ import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+// Corrigindo a importação para usar 'Farm' em vez de 'FarmData'
 import { RootStackParamList, Farm } from "../../screens/Types";
 import { colors } from "../../components/Colors";
 import { createFarm, updateFarm, deleteFarm } from "../../services/api";
@@ -58,7 +59,7 @@ export default function AddFarmScreen() {
     if (!nome || !latitude || !longitude || !municipio || !uf) {
       Alert.alert(
         "Campos Obrigatórios",
-        "Por favor, preencha todos os campos com *."
+        "Por favor, preencha todos os campos obrigatórios."
       );
       return;
     }
@@ -73,6 +74,7 @@ export default function AddFarmScreen() {
         return;
       }
 
+      // Objeto de dados alinhado com o tipo 'Farm'
       const farmData = {
         nome,
         latitude: parseFloat(latitude.replace(",", ".")),
@@ -80,16 +82,16 @@ export default function AddFarmScreen() {
         municipio,
         uf,
         cnpj,
-        areaTotal: areaTotal
-          ? parseFloat(areaTotal.replace(",", "."))
-          : undefined,
+        // CORREÇÃO: Garante que 'areaTotal' seja sempre um número.
+        areaTotal: parseFloat(areaTotal.replace(",", ".")) || 0,
         soloPredominante,
         cultivoPredominante,
         ativo: true,
       };
 
       if (isEditMode && farmToEdit) {
-        await updateFarm(Number(farmToEdit.id), farmData, token);
+        // CORREÇÃO: 'id' é uma string, não precisa de Number()
+        await updateFarm(farmToEdit.id, farmData, token);
         Alert.alert("Sucesso!", "Fazenda atualizada com sucesso.");
       } else {
         await createFarm(farmData, token);
@@ -106,7 +108,7 @@ export default function AddFarmScreen() {
 
   const handleDelete = async () => {
     if (!isEditMode || !farmToEdit) return;
-    console.log("Tentando deletar a fazenda com ID:", farmToEdit.id); // Adicione esta linha
+
     Alert.alert(
       "Confirmar Exclusão",
       `Tem certeza que deseja deletar a fazenda "${farmToEdit.nome}"?`,
@@ -122,7 +124,8 @@ export default function AddFarmScreen() {
                 Alert.alert("Erro de Autenticação", "Sessão expirada.");
                 return;
               }
-              await deleteFarm(Number(farmToEdit.id), token);
+              // CORREÇÃO: 'id' é uma string, não precisa de Number()
+              await deleteFarm(farmToEdit.id, token);
               Alert.alert("Sucesso!", "Fazenda deletada com sucesso.");
               navigation.goBack();
             } catch (error: any) {
@@ -160,7 +163,7 @@ export default function AddFarmScreen() {
           contentContainerStyle={styles.formContent}
           showsVerticalScrollIndicator={false}
         >
-          <Text style={styles.inputLabel}>Nome da Fazenda *</Text>
+          <Text style={styles.inputLabel}>Nome da Fazenda</Text>
           <TextInput
             style={styles.input}
             value={nome}
@@ -169,7 +172,7 @@ export default function AddFarmScreen() {
             placeholderTextColor="#999"
           />
 
-          <Text style={styles.inputLabel}>Município *</Text>
+          <Text style={styles.inputLabel}>Município</Text>
           <TextInput
             style={styles.input}
             value={municipio}
@@ -178,7 +181,7 @@ export default function AddFarmScreen() {
             placeholderTextColor="#999"
           />
 
-          <Text style={styles.inputLabel}>UF *</Text>
+          <Text style={styles.inputLabel}>UF</Text>
           <TextInput
             style={styles.input}
             value={uf}
@@ -189,7 +192,7 @@ export default function AddFarmScreen() {
             placeholderTextColor="#999"
           />
 
-          <Text style={styles.inputLabel}>Latitude *</Text>
+          <Text style={styles.inputLabel}>Latitude</Text>
           <TextInput
             style={styles.input}
             value={latitude}
@@ -199,7 +202,7 @@ export default function AddFarmScreen() {
             placeholderTextColor="#999"
           />
 
-          <Text style={styles.inputLabel}>Longitude *</Text>
+          <Text style={styles.inputLabel}>Longitude</Text>
           <TextInput
             style={styles.input}
             value={longitude}
