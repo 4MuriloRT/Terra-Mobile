@@ -1,188 +1,155 @@
-import React, { useState, useCallback, useEffect } from "react";
-import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity,
-  Alert, SafeAreaView, Platform, ActivityIndicator, Modal
-} from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { useNavigation, useFocusEffect } from "@react-navigation/native";
-import { StackNavigationProp } from "@react-navigation/stack";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+// src/pages/Plantio/PlantioScreen.tsx
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, Modal, Alert, ActivityIndicator, SafeAreaView, Platform } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList, Farm } from '../../screens/Types';
+import { colors } from '../../components/Colors';
+import { fetchFarms } from '../../services/api';
+import { CustomPicker } from '../../components/CustomPicker';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { RootStackParamList, Farm, Plantio } from "../../screens/Types";
-import { colors } from "../../components/Colors";
-import { CustomPicker } from "../../components/CustomPicker";
-import { fetchFarms, fetchPlantiosByFazenda } from "../../services/api";
+type NavigationProp = StackNavigationProp<RootStackParamList, 'PlantioScreen'>;
 
-type PlantioScreenNavigationProp = StackNavigationProp<RootStackParamList, "PlantioScreen">;
+// Defina seus tipos de cultura e as imagens correspondentes
+const cultureTypes = [
+  { id: 'SOJA', name: 'Soja', image: require('../../assets/soy.png') },
+  { id: 'MILHO', name: 'Milho', image: require('../../assets/corn.png') },
+  { id: 'FEIJAO', name: 'Feijão', image: require('../../assets/bean.png') },
+  { id: 'ARROZ', name: 'Arroz', image: require('../../assets/rice.png') },
+  { id: 'CAFE', name: 'Café', image: require('../../assets/coffee.png') },
+  { id: 'ALGODAO', name: 'Algodão', image: require('../../assets/cotton.png') },
+  { id: 'BANANA', name: 'Banana', image: require('../../assets/banana.png') },
+  { id: 'LARANJA', name: 'Laranja', image: require('../../assets/orange.png') },
+];
 
 export default function PlantioScreen() {
-  const navigation = useNavigation<PlantioScreenNavigationProp>();
-  
-  // Estados da tela
-  const [fazendas, setFazendas] = useState<Farm[]>([]);
-  const [selectedFazenda, setSelectedFazenda] = useState<string>('');
-  const [plantios, setPlantios] = useState<Plantio[]>([]);
-  const [isLoadingFarms, setIsLoadingFarms] = useState(true);
-  const [isLoadingPlantios, setIsLoadingPlantios] = useState(false);
-  const [isModalVisible, setIsModalVisible] = useState(false);
+  const navigation = useNavigation<NavigationProp>();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedCulture, setSelectedCulture] = useState<{ id: string; name: string } | null>(null);
+  const [farms, setFarms] = useState<Farm[]>([]);
+  const [selectedFarm, setSelectedFarm] = useState<string>('');
+  const [isLoadingFarms, setIsLoadingFarms] = useState(false);
 
-  // Carrega a lista de fazendas para o seletor
+  const handleCulturePress = (culture: { id: string; name: string }) => {
+    setSelectedCulture(culture);
+    loadFarms();
+  };
+
   const loadFarms = async () => {
+    setIsLoadingFarms(true);
+    setModalVisible(true);
     try {
-      setIsLoadingFarms(true);
       const token = await AsyncStorage.getItem('@TerraManager:token');
-      if (!token) throw new Error('Token não encontrado.');
+      if (!token) throw new Error("Token não encontrado.");
       const response = await fetchFarms(token);
-      setFazendas(response.data || []);
+      setFarms(response.data || []);
     } catch (error: any) {
-      Alert.alert('Erro', error.message);
+      Alert.alert("Erro", "Não foi possível carregar as fazendas.");
+      setModalVisible(false);
     } finally {
       setIsLoadingFarms(false);
     }
   };
 
-  // Carrega os plantios quando uma fazenda é selecionada
-  useEffect(() => {
-    const loadPlantios = async () => {
-      if (!selectedFazenda) {
-        setPlantios([]);
-        return;
-      }
-      try {
-        setIsLoadingPlantios(true);
-        const token = await AsyncStorage.getItem('@TerraManager:token');
-        if (!token) throw new Error('Token não encontrado.');
-        const response = await fetchPlantiosByFazenda(selectedFazenda, token);
-        setPlantios(response.data || []);
-      } catch (error: any) {
-        Alert.alert('Erro', error.message);
-        setPlantios([]);
-      } finally {
-        setIsLoadingPlantios(false);
-      }
-    };
+  const handleSelectFarm = () => {
+    if (!selectedFarm) {
+      Alert.alert("Atenção", "Por favor, selecione uma fazenda.");
+      return;
+    }
+    setModalVisible(false);
+    // Navega para a tela de listagem de plantios (Passo 3)
+    navigation.navigate('ListPlantioScreen', {
+      farmId: selectedFarm,
+      cultureType: selectedCulture?.id || '',
+    });
+  };
 
-    loadPlantios();
-  }, [selectedFazenda]);
-
-  // Recarrega as fazendas quando a tela recebe foco
-  useFocusEffect(useCallback(() => { loadFarms(); }, []));
-
-  const handleOpenModal = () => setIsModalVisible(true);
-
-  const renderItem = ({ item }: { item: Plantio }) => (
-    <View style={styles.tableRow}>
-      <Text style={[styles.cellText, { flex: 2 }]}>{item.cultivar.nomePopular}</Text>
-      <Text style={[styles.cellText, { flex: 2 }]}>{new Date(item.dataPlantio).toLocaleDateString('pt-BR')}</Text>
-      <Text style={[styles.cellText, { flex: 1.5 }]}>{item.areaPlantada} ha</Text>
-      <View style={styles.actionsCell}>
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="eye-outline" size={22} color="#3498db" />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <Ionicons name="trash-outline" size={22} color="#e74c3c" />
-        </TouchableOpacity>
-      </View>
-    </View>
+  const renderCultureItem = ({ item }: { item: typeof cultureTypes[0] }) => (
+    <TouchableOpacity style={styles.card} onPress={() => handleCulturePress(item)}>
+      <Image source={item.image} style={styles.cardImage} />
+      <Text style={styles.cardText}>{item.name}</Text>
+    </TouchableOpacity>
   );
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Gestão de Plantio</Text>
-        <TouchableOpacity style={styles.addButton} onPress={handleOpenModal}>
-          <Ionicons name="add" size={20} color={colors.white} />
-          <Text style={styles.addButtonText}>Novo</Text>
-        </TouchableOpacity>
       </View>
+      <FlatList
+        data={cultureTypes}
+        renderItem={renderCultureItem}
+        keyExtractor={(item) => item.id}
+        numColumns={2}
+        contentContainerStyle={styles.grid}
+      />
 
-      <View style={styles.content}>
-        <CustomPicker
-          selectedValue={selectedFazenda}
-          onValueChange={(value) => setSelectedFazenda(value)}
-          options={fazendas.map(f => ({ label: f.nome, value: f.id }))}
-          placeholder="Selecione uma fazenda para ver os plantios..."
-        />
-
-        {isLoadingPlantios ? (
-          <ActivityIndicator size="large" color={colors.white} style={{ marginTop: 40 }} />
-        ) : (
-          <FlatList
-            data={plantios}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id.toString()}
-            ListHeaderComponent={
-              plantios.length > 0 ? (
-                <View style={styles.tableHeader}>
-                  <Text style={[styles.headerText, { flex: 2 }]}>Cultivar</Text>
-                  <Text style={[styles.headerText, { flex: 2 }]}>Data Plantio</Text>
-                  <Text style={[styles.headerText, { flex: 1.5 }]}>Área</Text>
-                  <Text style={[styles.headerText, { flex: 1, textAlign: 'center' }]}>Ações</Text>
-                </View>
-              ) : null
-            }
-            ListEmptyComponent={
-              <View style={styles.emptyContainer}>
-                <Ionicons name="leaf-outline" size={60} color="rgba(255,255,255,0.3)" />
-                <Text style={styles.emptyText}>
-                  {selectedFazenda ? 'Nenhum plantio encontrado.' : 'Selecione uma fazenda.'}
-                </Text>
-              </View>
-            }
-            contentContainerStyle={{ paddingTop: 10, flexGrow: 1 }}
-          />
-        )}
-      </View>
-      
-      {/* O modal de "Novo Plantio" continua aqui, mas agora ele é aberto por um estado local */}
-      {/* ... (código do seu modal de novo plantio) ... */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Selecione a Fazenda para o Plantio de {selectedCulture?.name}</Text>
+            {isLoadingFarms ? (
+              <ActivityIndicator size="large" color={colors.primary} />
+            ) : (
+              <CustomPicker
+                selectedValue={selectedFarm}
+                onValueChange={setSelectedFarm}
+                options={farms.map(f => ({ label: f.nome, value: f.id }))}
+                placeholder="Selecione uma fazenda..."
+              />
+            )}
+            <TouchableOpacity style={styles.modalButton} onPress={handleSelectFarm} disabled={isLoadingFarms}>
+              <Text style={styles.modalButtonText}>Avançar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.modalButton, styles.cancelButton]} onPress={() => setModalVisible(false)}>
+              <Text style={styles.modalButtonText}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#1E322D' },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: colors.primary,
-    paddingTop: Platform.OS === 'android' ? 40 : 15,
-  },
-  headerTitle: { color: colors.white, fontSize: 22, fontWeight: 'bold' },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.secondary,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-  },
-  addButtonText: { color: colors.white, marginLeft: 5, fontWeight: 'bold' },
-  content: { flex: 1, paddingHorizontal: 15, paddingTop: 10 },
-  tableHeader: {
-    flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.2)',
-    paddingBottom: 10,
-    marginTop: 10,
-    paddingHorizontal: 10,
-  },
-  headerText: { color: colors.white, fontWeight: 'bold', fontSize: 12, textTransform: 'uppercase' },
-  tableRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 8,
-    paddingVertical: 15,
-    paddingHorizontal: 10,
-    marginTop: 10,
-  },
-  cellText: { color: colors.white, fontSize: 14 },
-  actionsCell: { flex: 1, flexDirection: 'row', justifyContent: 'center', gap: 15 },
-  actionButton: { padding: 5 },
-  emptyContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
-  emptyText: { color: 'white', textAlign: 'center', marginTop: 15, fontSize: 18, fontWeight: 'bold' },
+    container: { flex: 1, backgroundColor: '#1E322D' },
+    header: {
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        backgroundColor: colors.primary,
+        paddingTop: Platform.OS === 'android' ? 40 : 15,
+        alignItems: 'center',
+    },
+    headerTitle: { color: colors.white, fontSize: 22, fontWeight: 'bold' },
+    grid: { padding: 10 },
+    card: {
+        flex: 1,
+        margin: 10,
+        backgroundColor: 'rgba(255, 255, 255, 0.05)',
+        borderRadius: 12,
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        aspectRatio: 1,
+    },
+    cardImage: { width: 80, height: 80, marginBottom: 10 },
+    cardText: { color: colors.white, fontSize: 16, fontWeight: 'bold' },
+    modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)' },
+    modalContent: {
+        width: '85%',
+        backgroundColor: 'white',
+        borderRadius: 12,
+        padding: 25,
+        elevation: 5,
+    },
+    modalTitle: { fontSize: 18, fontWeight: 'bold', marginBottom: 20, textAlign: 'center' },
+    modalButton: { backgroundColor: colors.secondary, borderRadius: 8, paddingVertical: 12, alignItems: 'center', marginTop: 20 },
+    modalButtonText: { color: colors.white, fontSize: 16, fontWeight: 'bold' },
+    cancelButton: { backgroundColor: colors.danger, marginTop: 10 },
 });

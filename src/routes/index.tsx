@@ -13,8 +13,8 @@ import AddFarmScreen from "../pages/Fazendas/AddFarmScreen";
 import AddCultivoScreen from "../pages/Cultivos/AddCultivoScreen";
 import CultivosScreen from "../pages/Cultivos/CultivosScreen";
 import PlantioScreen from "../pages/Plantio/PlantioScreen";
-
-// Importe as novas telas
+import ListPlantioScreen from "../pages/Plantio/ListPlantioScreen";
+import SelectCultivarScreen from "../pages/Plantio/SelectCultivarScreen";
 import AddPlantioScreen from "../pages/Plantio/AddPlantioScreen";
 import AnaliseSoloScreen from "../pages/Plantio/AnaliseSoloScreen";
 
@@ -30,20 +30,76 @@ export default function Routes() {
       }}
     >
       {/* ... Suas telas existentes ... */}
-      <Stack.Screen name="Welcome" component={Welcome} options={{ headerShown: false }} />
-      <Stack.Screen name="SignIn" component={SignIn} options={{ title: "Login" }} />
-      <Stack.Screen name="Register" component={Register} options={{ title: "Cadastro" }} />
-      <Stack.Screen name="DashboardTabs" component={TabRoutes} options={{ headerShown: false }} />
-      <Stack.Screen name="DashboardScreen" component={DashboardScreen} options={{ headerShown: false }} />
-      <Stack.Screen name="FazendasScreen" component={FazendasScreen} options={{ title: "Gestão de Fazendas" }} />
-      <Stack.Screen name="AddFarmScreen" component={AddFarmScreen} options={{headerShown: false}} />
-      <Stack.Screen name="AddCultivoScreen" component={AddCultivoScreen} options={{headerShown: false}} />
-      <Stack.Screen name="CultivosScreen" component={CultivosScreen} options={{ title: "Gestão de Cultivos" }} />
-      <Stack.Screen name="PlantioScreen" component={PlantioScreen} options={{ title: "Gestão de Plantio"}} />
-      
-      {/* Adicione as novas rotas do fluxo de plantio */}
-      <Stack.Screen name="AddPlantioScreen" component={AddPlantioScreen} options={{headerShown: false}} />
-      <Stack.Screen name="AnaliseSoloScreen" component={AnaliseSoloScreen} options={{headerShown: false}} />
+      <Stack.Screen
+        name="Welcome"
+        component={Welcome}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SignIn"
+        component={SignIn}
+        options={{ title: "Login" }}
+      />
+      <Stack.Screen
+        name="Register"
+        component={Register}
+        options={{ title: "Cadastro" }}
+      />
+      <Stack.Screen
+        name="DashboardTabs"
+        component={TabRoutes}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="DashboardScreen"
+        component={DashboardScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="FazendasScreen"
+        component={FazendasScreen}
+        options={{ title: "Gestão de Fazendas" }}
+      />
+      <Stack.Screen
+        name="AddFarmScreen"
+        component={AddFarmScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AddCultivoScreen"
+        component={AddCultivoScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="CultivosScreen"
+        component={CultivosScreen}
+        options={{ title: "Gestão de Cultivos" }}
+      />
+      <Stack.Screen
+        name="PlantioScreen"
+        component={PlantioScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="ListPlantioScreen"
+        component={ListPlantioScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SelectCultivarScreen"
+        component={SelectCultivarScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AddPlantioScreen"
+        component={AddPlantioScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AnaliseSoloScreen"
+        component={AnaliseSoloScreen}
+        options={{ headerShown: false }}
+      />
     </Stack.Navigator>
   );
 }

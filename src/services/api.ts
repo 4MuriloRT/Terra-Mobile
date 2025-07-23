@@ -218,9 +218,12 @@ export const createAnaliseSolo = async (analiseData: any, token: string) => {
 
 export const fetchPlantiosByFazenda = async (
   fazendaId: string,
+  tipoPlanta: string, // Adicionamos o tipoPlanta como parâmetro
   token: string
 ) => {
-  const endpoint = `/plantio/fazenda/${fazendaId}`;
+  // ✅ Rota corrigida para corresponder ao Swagger
+  const endpoint = `/plantio/fazenda/${fazendaId}/tipo-planta/${tipoPlanta}`;
+  
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "GET",
     headers: {
@@ -228,8 +231,10 @@ export const fetchPlantiosByFazenda = async (
       Authorization: `Bearer ${token}`,
     },
   });
-  if (!response.ok)
+
+  if (!response.ok) {
     throw new Error("Não foi possível carregar os plantios para esta fazenda.");
+  }
   return response.json();
 };
 

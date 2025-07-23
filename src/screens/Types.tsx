@@ -54,7 +54,9 @@ export type RootStackParamList = {
   AddFarmScreen: { farm?: Farm }; // Alterado para Farm
   AddCultivoScreen: { cultivar?: Cultivar };
   CultivosScreen: undefined;
-  PlantioScreen: undefined;
-  AddPlantioScreen: { farmId: string };
-  AnaliseSoloScreen: { farmId: string; dadosPlantio: any };
+  PlantioScreen: undefined; // Tela de seleção de cultura
+  ListPlantioScreen: { farmId: string; cultureType: string };
+  SelectCultivarScreen: { farmId: string; cultureType: string };
+  AddPlantioScreen: { farmId: string; cultivarId: string };
+  //AnaliseSoloScreen: { farmId: string; dadosPlantio: any };
 };
