@@ -7,5 +7,6 @@ export const colors = {
   textSecondary: "#6C757D", // Marrom acinzentado para textos secundários
   accent: "#D4A373", // Dourado antigo (detalhes e botões)
   white: "#FFFFFF",
-  blue: "#0000FF", // (mantido caso esteja em uso)
+  blue: "#0000FF",
+  danger: '#dc3545', // (mantido caso esteja em uso)
 };

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react"; // ✅ CORREÇÃO APLICADA AQUI
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -17,7 +17,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { RootStackParamList, Farm } from "../../screens/Types";
 import { colors } from "../../components/Colors";
-import { createFarm } from "../../services/api";
+import { createFarm, updateFarm, deleteFarm } from "../../services/api";
 
 type AddFarmScreenRouteProp = RouteProp<RootStackParamList, "AddFarmScreen">;
 type NavigationProp = StackNavigationProp<RootStackParamList, "AddFarmScreen">;
@@ -28,29 +28,19 @@ export default function AddFarmScreen() {
   const farmToEdit = route.params?.farm;
   const isEditMode = !!farmToEdit;
 
-  // Estados para o formulário
-  const [nome, setNome] = useState(farmToEdit?.nome || "");
-  const [latitude, setLatitude] = useState(
-    farmToEdit?.latitude.toString() || ""
-  );
-  const [longitude, setLongitude] = useState(
-    farmToEdit?.longitude.toString() || ""
-  );
-  const [municipio, setMunicipio] = useState(farmToEdit?.municipio || "");
-  const [uf, setUf] = useState(farmToEdit?.uf || "");
-  const [cnpj, setCnpj] = useState(farmToEdit?.cnpj || "");
-  const [areaTotal, setAreaTotal] = useState(
-    farmToEdit?.areaTotal?.toString() || ""
-  );
-  const [soloPredominante, setSoloPredominante] = useState(
-    farmToEdit?.soloPredominante || ""
-  );
-  const [cultivoPredominante, setCultivoPredominante] = useState(
-    farmToEdit?.cultivoPredominante || ""
-  );
+  // --- Estados para o formulário ---
+  const [nome, setNome] = useState("");
+  const [latitude, setLatitude] = useState("");
+  const [longitude, setLongitude] = useState("");
+  const [municipio, setMunicipio] = useState("");
+  const [uf, setUf] = useState("");
+  const [cnpj, setCnpj] = useState("");
+  const [areaTotal, setAreaTotal] = useState("");
+  const [soloPredominante, setSoloPredominante] = useState("");
+  const [cultivoPredominante, setCultivoPredominante] = useState("");
 
   useEffect(() => {
-    // Se estiver no modo de edição, popula os campos
+    // Popula os campos APENAS se estiver em modo de edição
     if (isEditMode && farmToEdit) {
       setNome(farmToEdit.nome);
       setLatitude(farmToEdit.latitude.toString());
@@ -89,26 +79,62 @@ export default function AddFarmScreen() {
         longitude: parseFloat(longitude.replace(",", ".")),
         municipio,
         uf,
-        ...(cnpj && { cnpj }),
-        ...(areaTotal && {
-          areaTotal: parseFloat(areaTotal.replace(",", ".")),
-        }),
-        ...(soloPredominante && { soloPredominante }),
-        ...(cultivoPredominante && { cultivoPredominante }),
+        cnpj,
+        areaTotal: areaTotal
+          ? parseFloat(areaTotal.replace(",", "."))
+          : undefined,
+        soloPredominante,
+        cultivoPredominante,
+        ativo: true,
       };
 
-      if (isEditMode) {
-        // Lógica para ATUALIZAR uma fazenda (será implementada no futuro)
-        Alert.alert("Info", "Funcionalidade de editar em desenvolvimento.");
+      if (isEditMode && farmToEdit) {
+        await updateFarm(Number(farmToEdit.id), farmData, token);
+        Alert.alert("Sucesso!", "Fazenda atualizada com sucesso.");
       } else {
-        // Lógica para CRIAR uma nova fazenda
         await createFarm(farmData, token);
         Alert.alert("Sucesso!", "Fazenda cadastrada com sucesso.");
-        navigation.goBack();
       }
+      navigation.goBack();
     } catch (error: any) {
-      Alert.alert("Erro ao Salvar", error.message);
+      Alert.alert(
+        "Erro ao Salvar",
+        error.message || "Não foi possível conectar ao servidor."
+      );
     }
+  };
+
+  const handleDelete = async () => {
+    if (!isEditMode || !farmToEdit) return;
+    console.log("Tentando deletar a fazenda com ID:", farmToEdit.id); // Adicione esta linha
+    Alert.alert(
+      "Confirmar Exclusão",
+      `Tem certeza que deseja deletar a fazenda "${farmToEdit.nome}"?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Deletar",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              const token = await AsyncStorage.getItem("@TerraManager:token");
+              if (!token) {
+                Alert.alert("Erro de Autenticação", "Sessão expirada.");
+                return;
+              }
+              await deleteFarm(Number(farmToEdit.id), token);
+              Alert.alert("Sucesso!", "Fazenda deletada com sucesso.");
+              navigation.goBack();
+            } catch (error: any) {
+              Alert.alert(
+                "Erro ao Deletar",
+                error.message || "Não foi possível realizar a operação."
+              );
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -139,7 +165,8 @@ export default function AddFarmScreen() {
             style={styles.input}
             value={nome}
             onChangeText={setNome}
-            placeholder="Ex: Fazenda Água Limpa"
+            placeholder="Ex: Fazenda Santa Maria"
+            placeholderTextColor="#999"
           />
 
           <Text style={styles.inputLabel}>Município *</Text>
@@ -147,6 +174,8 @@ export default function AddFarmScreen() {
             style={styles.input}
             value={municipio}
             onChangeText={setMunicipio}
+            placeholder="Ex: Unaí"
+            placeholderTextColor="#999"
           />
 
           <Text style={styles.inputLabel}>UF *</Text>
@@ -155,6 +184,9 @@ export default function AddFarmScreen() {
             value={uf}
             onChangeText={setUf}
             maxLength={2}
+            autoCapitalize="characters"
+            placeholder="Ex: MG"
+            placeholderTextColor="#999"
           />
 
           <Text style={styles.inputLabel}>Latitude *</Text>
@@ -163,6 +195,8 @@ export default function AddFarmScreen() {
             value={latitude}
             onChangeText={setLatitude}
             keyboardType="numeric"
+            placeholder="Ex: -16.358"
+            placeholderTextColor="#999"
           />
 
           <Text style={styles.inputLabel}>Longitude *</Text>
@@ -171,16 +205,65 @@ export default function AddFarmScreen() {
             value={longitude}
             onChangeText={setLongitude}
             keyboardType="numeric"
+            placeholder="Ex: -46.911"
+            placeholderTextColor="#999"
+          />
+
+          <Text style={styles.inputLabel}>Área Total (ha)</Text>
+          <TextInput
+            style={styles.input}
+            value={areaTotal}
+            onChangeText={setAreaTotal}
+            keyboardType="numeric"
+            placeholder="Ex: 250.5"
+            placeholderTextColor="#999"
+          />
+
+          <Text style={styles.inputLabel}>CNPJ</Text>
+          <TextInput
+            style={styles.input}
+            value={cnpj}
+            onChangeText={setCnpj}
+            keyboardType="numeric"
+            placeholder="00.000.000/0001-00"
+            placeholderTextColor="#999"
+          />
+
+          <Text style={styles.inputLabel}>Solo Predominante</Text>
+          <TextInput
+            style={styles.input}
+            value={soloPredominante}
+            onChangeText={setSoloPredominante}
+            placeholder="Ex: Latossolo Vermelho"
+            placeholderTextColor="#999"
+          />
+
+          <Text style={styles.inputLabel}>Cultivo Predominante</Text>
+          <TextInput
+            style={styles.input}
+            value={cultivoPredominante}
+            onChangeText={setCultivoPredominante}
+            placeholder="Ex: Soja"
+            placeholderTextColor="#999"
           />
 
           <TouchableOpacity
-            style={styles.createButton}
+            style={styles.actionButton}
             onPress={handleCreateOrUpdate}
           >
-            <Text style={styles.createButtonText}>
+            <Text style={styles.actionButtonText}>
               {isEditMode ? "SALVAR ALTERAÇÕES" : "CADASTRAR"}
             </Text>
           </TouchableOpacity>
+
+          {isEditMode && (
+            <TouchableOpacity
+              style={[styles.actionButton, styles.deleteButton]}
+              onPress={handleDelete}
+            >
+              <Text style={styles.actionButtonText}>DELETAR FAZENDA</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </View>
     </KeyboardAvoidingView>
@@ -211,7 +294,7 @@ const styles = StyleSheet.create({
   },
   formContent: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: 40,
   },
   inputLabel: {
     fontSize: 16,
@@ -227,16 +310,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textPrimary,
   },
-  createButton: {
+  actionButton: {
     backgroundColor: colors.secondary,
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: "center",
     marginTop: 30,
   },
-  createButtonText: {
+  actionButtonText: {
     color: colors.white,
     fontSize: 18,
     fontWeight: "bold",
+  },
+  deleteButton: {
+    backgroundColor: colors.danger,
+    marginTop: 15,
   },
 });

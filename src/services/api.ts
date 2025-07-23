@@ -3,6 +3,24 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 // URL base do seu servidor backend
 const API_BASE_URL = "http://192.168.3.50:3000";
 
+// --- INTERFACES ---
+// Adicionando a definição da interface que estava faltando
+export interface FarmData {
+  id?: number;
+  nome: string;
+  latitude: number;
+  longitude: number;
+  municipio: string;
+  uf: string;
+  cnpj?: string;
+  areaTotal?: number;
+  soloPredominante?: string;
+  cultivoPredominante?: string;
+  ativo?: boolean;
+}
+
+// --- FUNÇÕES AUXILIARES ---
+
 /**
  * Realiza uma requisição GET autenticada para um endpoint da API.
  */
@@ -30,6 +48,7 @@ const fetchAuthenticated = async (endpoint: string) => {
   }
 
   const responseText = await response.text();
+  // Retorna null se a resposta for vazia, para evitar erro no JSON.parse()
   if (!responseText) {
     return null;
   }
@@ -37,37 +56,13 @@ const fetchAuthenticated = async (endpoint: string) => {
   return JSON.parse(responseText);
 };
 
-/**
- * Envia os dados de uma nova fazenda para o backend via POST.
- */
-export const createFarm = async (farmData: any, token: string) => {
-  const endpoint = "/fazenda";
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(farmData),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json();
-    throw new Error(
-      errorBody.message || "Não foi possível cadastrar a fazenda."
-    );
-  }
-
-  return response.json();
-};
+// --- FUNÇÕES DE API ---
 
 /**
  * Busca a lista de todas as fazendas do usuário.
  */
 export const fetchFarms = async (token: string) => {
-  const endpoint = "/fazenda/lista";
-
+  const endpoint = "/fazenda/lista"; // Endpoint para listar fazendas
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "GET",
     headers: {
@@ -84,11 +79,88 @@ export const fetchFarms = async (token: string) => {
 };
 
 /**
+ * Envia os dados de uma nova fazenda para o backend via POST.
+ */
+export const createFarm = async (
+  farmData: Omit<FarmData, "id">,
+  token: string
+) => {
+  const endpoint = "/fazenda"; // Endpoint para criar fazenda
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(farmData),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response
+      .json()
+      .catch(() => ({ message: "Não foi possível cadastrar a fazenda." }));
+    throw new Error(errorBody.message);
+  }
+
+  return response.json();
+};
+
+/**
+ * Atualiza os dados de uma fazenda existente via PUT.
+ */
+export const updateFarm = async (
+  id: number,
+  farmData: Partial<FarmData>,
+  token: string
+) => {
+  const endpoint = `/fazenda/${id}`; // Endpoint para atualizar uma fazenda específica
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(farmData),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response
+      .json()
+      .catch(() => ({ message: "Não foi possível atualizar a fazenda." }));
+    throw new Error(errorBody.message);
+  }
+
+  return response.json();
+};
+
+/**
+ * Deleta uma fazenda do banco de dados via DELETE.
+ */
+export const deleteFarm = async (id: number, token: string) => {
+  const endpoint = `/fazenda/${id}`; // Endpoint para deletar uma fazenda específica
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errorBody = await response
+      .json()
+      .catch(() => ({ message: "Não foi possível deletar a fazenda." }));
+    throw new Error(errorBody.message);
+  }
+
+  // Métodos DELETE bem-sucedidos geralmente retornam status 204 (No Content)
+  return { message: "Fazenda deletada com sucesso." };
+};
+
+/**
  * Envia os dados de um novo cultivar para o backend.
  */
 export const createCultivar = async (cultivarData: any, token: string) => {
   const endpoint = "/cultivar";
-
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "POST",
     headers: {
@@ -113,7 +185,6 @@ export const createCultivar = async (cultivarData: any, token: string) => {
  */
 export const fetchCultivares = async (token: string) => {
   const endpoint = "/cultivar";
-
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "GET",
     headers: {
@@ -134,7 +205,6 @@ export const fetchCultivares = async (token: string) => {
  */
 export const createPlantio = async (plantioData: any, token: string) => {
   const endpoint = "/plantio";
-
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "POST",
     headers: {
@@ -159,7 +229,6 @@ export const createPlantio = async (plantioData: any, token: string) => {
  */
 export const createAnaliseSolo = async (analiseData: any, token: string) => {
   const endpoint = "/analise-solo";
-
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "POST",
     headers: {
@@ -187,7 +256,6 @@ export const fetchPlantiosByFazenda = async (
   token: string
 ) => {
   const endpoint = `/plantio/fazenda/${fazendaId}`;
-
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "GET",
     headers: {
@@ -203,7 +271,7 @@ export const fetchPlantiosByFazenda = async (
   return response.json();
 };
 
-// --- Funções para o Dashboard ---
+// --- FUNÇÕES PARA O DASHBOARD ---
 
 export const fetchClima = () => {
   const endpoint = `/dashboard/clima?city=ARINOS&state=MG&country=BR`;
