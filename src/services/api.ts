@@ -198,7 +198,7 @@ export const createPlantio = async (plantioData: any, token: string) => {
 };
 
 export const createAnaliseSolo = async (analiseData: any, token: string) => {
-  const endpoint = "/analise-solo";
+  const endpoint = "/analise-solo"; // Verifique se esta é a rota correta no seu backend
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "POST",
     headers: {
@@ -207,10 +207,15 @@ export const createAnaliseSolo = async (analiseData: any, token: string) => {
     },
     body: JSON.stringify(analiseData),
   });
+
   if (!response.ok) {
-    const errorBody = await response.json();
+    const errorBody = await response
+      .json()
+      .catch(() => ({
+        message: "Erro desconhecido ao criar análise de solo.",
+      }));
     throw new Error(
-      errorBody.message || "Não foi possível salvar a Análise de Solo."
+      errorBody.message || "Não foi possível cadastrar a análise de solo."
     );
   }
   return response.json();
@@ -223,7 +228,7 @@ export const fetchPlantiosByFazenda = async (
 ) => {
   // ✅ Rota corrigida para corresponder ao Swagger
   const endpoint = `/plantio/fazenda/${fazendaId}/tipo-planta/${tipoPlanta}`;
-  
+
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: "GET",
     headers: {
@@ -242,40 +247,37 @@ export const updatePlantio = async (
   plantioId: number,
   data: any,
   token: string
- ) => {
+) => {
   const endpoint = `/plantio/${plantioId}`;
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-   method: "PUT",
-   headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-   },
-   body: JSON.stringify(data),
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
   });
- 
+
   if (!response.ok) {
-   throw new Error("Não foi possível atualizar o plantio.");
+    throw new Error("Não foi possível atualizar o plantio.");
   }
   return response.json();
- };
- 
- export const deletePlantio = async (
-  plantioId: number,
-  token: string
- ) => {
+};
+
+export const deletePlantio = async (plantioId: number, token: string) => {
   const endpoint = `/plantio/${plantioId}`;
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-   method: "DELETE",
-   headers: {
-    Authorization: `Bearer ${token}`,
-   },
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
   });
- 
+
   if (!response.ok) {
-   throw new Error("Não foi possível deletar o plantio.");
+    throw new Error("Não foi possível deletar o plantio.");
   }
   return response.json(); // Ou talvez response.status === 204
- };
+};
 
 // --- FUNÇÕES PARA O DASHBOARD ---
 export const fetchClima = () =>

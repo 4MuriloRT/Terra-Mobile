@@ -15,6 +15,7 @@ export type Farm = {
 export type Plantio = {
   id: number;
   idCultivar: number;
+  idAnaliseSolo?: number;
   dataPlantio: string;
   dataEmergencia?: string;
   dataPrevistaColheita?: string;

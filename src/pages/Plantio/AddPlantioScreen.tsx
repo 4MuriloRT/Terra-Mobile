@@ -10,6 +10,8 @@ import {
   Platform,
   KeyboardAvoidingView,
   ActivityIndicator,
+  SafeAreaView,
+  Modal, // Importação corrigida
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -25,8 +27,10 @@ import {
   createPlantio,
   updatePlantio,
   deletePlantio as deletePlantioApi,
+  createAnaliseSolo, // Importação adicionada
 } from "../../services/api";
 import { CustomPicker } from "../../components/CustomPicker";
+import AnaliseSoloScreen from "./AnaliseSoloScreen";
 
 // Tipagem para as props do componente
 type NavigationProp = StackNavigationProp<
@@ -66,12 +70,13 @@ const toISODate = (dateString: string) => {
   return new Date(`${year}-${month}-${day}`).toISOString();
 };
 
-const formatDateForInput = (isoDate: string | undefined): string => {
+const formatDateForInput = (isoDate?: string): string => {
   if (!isoDate) return "";
   const date = new Date(isoDate);
-  const day = String(date.getDate()).padStart(2, "0");
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const year = date.getFullYear();
+  if (isNaN(date.getTime())) return ""; // Checagem de data inválida
+  const day = String(date.getUTCDate()).padStart(2, "0");
+  const month = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const year = date.getUTCFullYear();
   return `${day}/${month}/${year}`;
 };
 
@@ -114,29 +119,27 @@ export default function AddPlantioScreen() {
   const [mmAguaAplicado, setMmAguaAplicado] = useState("");
   const [irrigacaoVolume, setIrrigacaoVolume] = useState("");
   const [irrigacaoDuracao, setIrrigacaoDuracao] = useState("");
-
   const [aduboNitrogenioDose, setAduboNitrogenioDose] = useState("");
   const [aduboNitrogenioUnidade, setAduboNitrogenioUnidade] = useState("KG_HA");
   const [aduboPotassioDose, setAduboPotassioDose] = useState("");
   const [aduboPotassioUnidade, setAduboPotassioUnidade] = useState("KG_HA");
   const [aduboFosforoDose, setAduboFosforoDose] = useState("");
   const [aduboFosforoUnidade, setAduboFosforoUnidade] = useState("KG_HA");
-
   const [defensivoUtilizado, setDefensivoUtilizado] = useState("");
   const [doseDefensivo, setDoseDefensivo] = useState("");
   const [unidadeDefensivo, setUnidadeDefensivo] = useState("L_HA");
-
   const [custoSemente, setCustoSemente] = useState("");
   const [custoFertilizante, setCustoFertilizante] = useState("");
   const [custoDefensivo, setCustoDefensivo] = useState("");
   const [custoCombustivel, setCustoCombustivel] = useState("");
   const [custoOutros, setCustoOutros] = useState("");
-
   const [statusPlantio, setStatusPlantio] = useState("PLANEJADO");
   const [observacao, setObservacao] = useState("");
+  const [isAnaliseModalVisible, setAnaliseModalVisible] = useState(false);
+  const [dadosAnaliseSolo, setDadosAnaliseSolo] = useState<any>(null);
 
   useEffect(() => {
-    if (plantio) {
+    if (isEditing && plantio) {
       setDataPlantio(formatDateForInput(plantio.dataPlantio));
       setDataEmergencia(formatDateForInput(plantio.dataEmergencia));
       setDataPrevistaColheita(formatDateForInput(plantio.dataPrevistaColheita));
@@ -171,8 +174,11 @@ export default function AddPlantioScreen() {
       setCustoOutros(String(plantio.custoOutros || ""));
       setStatusPlantio(plantio.statusPlantio || "PLANEJADO");
       setObservacao(plantio.observacao || "");
+      if (plantio.idAnaliseSolo) {
+        setDadosAnaliseSolo({ id: plantio.idAnaliseSolo });
+      }
     }
-  }, [plantio]);
+  }, [plantio, isEditing]);
 
   const handleSavePlantio = async () => {
     if (!dataPlantio || !areaPlantada || !densidadePlanejada) {
@@ -185,13 +191,20 @@ export default function AddPlantioScreen() {
       const token = await AsyncStorage.getItem("@TerraManager:token");
       if (!token) throw new Error("Sessão expirada.");
 
+      let idAnaliseSoloFinal = dadosAnaliseSolo?.id || null;
+
+      if (dadosAnaliseSolo && !dadosAnaliseSolo.id) {
+        const analiseCriada = await createAnaliseSolo(dadosAnaliseSolo, token);
+        idAnaliseSoloFinal = analiseCriada.id;
+      }
+
       const payload = {
-        id: plantio?.id, // Adiciona o ID se estiver editando
         idFazenda: parseInt(farmId, 10),
         idCultivar: parseInt(
           isEditing ? String(plantio.idCultivar) : cultivarId!,
           10
-        ), // Mantém o cultivar original na edição
+        ),
+        idAnaliseSolo: idAnaliseSoloFinal,
         dataPlantio: toISODate(dataPlantio),
         dataEmergencia: toISODate(dataEmergencia),
         dataPrevistaColheita: toISODate(dataPrevistaColheita),
@@ -238,10 +251,10 @@ export default function AddPlantioScreen() {
 
       if (isEditing) {
         await updatePlantio(plantio.id, payload, token);
-        Alert.alert("Sucesso!", "Plantio atualizado com sucesso!");
+        Alert.alert("Sucesso!", "Plantio atualizado!");
       } else {
         await createPlantio(payload, token);
-        Alert.alert("Sucesso!", "Novo plantio cadastrado com sucesso!");
+        Alert.alert("Sucesso!", "Novo plantio cadastrado!");
       }
       navigation.navigate("ListPlantioScreen", { farmId, cultureType });
     } catch (error: any) {
@@ -259,12 +272,20 @@ export default function AddPlantioScreen() {
     }
   };
 
-  const handleDeletePlantio = async () => {
-    if (!plantio?.id) return;
-
+  const handleSaveAnaliseData = (data: any) => {
+    setDadosAnaliseSolo(data);
+    setAnaliseModalVisible(false);
     Alert.alert(
-      "Deletar Plantio",
-      "Tem certeza que deseja deletar este plantio?",
+      "Análise Preenchida",
+      "Os dados foram salvos. Salve o plantio para confirmar a associação."
+    );
+  };
+
+  const handleDeletePlantio = () => {
+    if (!plantio?.id) return;
+    Alert.alert(
+      "Confirmar Exclusão",
+      "Você tem certeza que deseja deletar este plantio?",
       [
         { text: "Cancelar", style: "cancel" },
         {
@@ -275,19 +296,14 @@ export default function AddPlantioScreen() {
             try {
               const token = await AsyncStorage.getItem("@TerraManager:token");
               if (!token) throw new Error("Sessão expirada.");
-
               await deletePlantioApi(plantio.id, token);
-              Alert.alert("Sucesso!", "Plantio deletado com sucesso!");
+              Alert.alert("Sucesso!", "Plantio deletado.");
               navigation.navigate("ListPlantioScreen", { farmId, cultureType });
             } catch (error: any) {
               const errorMessage =
                 error.response?.data?.message?.[0] ||
                 error.message ||
-                "Não foi possível conectar ao servidor.";
-              console.error(
-                "Erro ao deletar plantio:",
-                error.response?.data || error.message
-              );
+                "Não foi possível deletar.";
               Alert.alert("Erro ao Deletar", errorMessage);
             } finally {
               setIsLoading(false);
@@ -299,11 +315,11 @@ export default function AddPlantioScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
-      <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
         <View style={styles.header}>
           <TouchableOpacity
             onPress={() => navigation.goBack()}
@@ -312,7 +328,7 @@ export default function AddPlantioScreen() {
             <Ionicons name="arrow-back" size={24} color={colors.white} />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>
-            {isEditing ? "Editar Plantio" : "Adicionar Novo Plantio"}
+            {isEditing ? "Editar Plantio" : "Adicionar Plantio"}
           </Text>
           <View style={{ width: 24 }} />
         </View>
@@ -321,6 +337,26 @@ export default function AddPlantioScreen() {
           contentContainerStyle={styles.formContent}
           showsVerticalScrollIndicator={false}
         >
+          <Text style={styles.sectionTitle}>Análise de Solo (Opcional)</Text>
+          <TouchableOpacity
+            style={styles.analiseButton}
+            onPress={() => setAnaliseModalVisible(true)}
+          >
+            <Ionicons name="flask-outline" size={22} color={colors.white} />
+            <Text style={styles.analiseButtonText}>
+              {dadosAnaliseSolo
+                ? "Visualizar / Editar Análise"
+                : "Adicionar Análise de Solo"}
+            </Text>
+          </TouchableOpacity>
+          {dadosAnaliseSolo && (
+            <Text style={styles.analiseStatusText}>
+              {dadosAnaliseSolo.id
+                ? `Análise ID ${dadosAnaliseSolo.id} associada.`
+                : "Análise preenchida e pronta para salvar."}
+            </Text>
+          )}
+
           <Text style={styles.sectionTitle}>Dados Base do Plantio</Text>
           <FormRow>
             <FormColumn>
@@ -346,170 +382,6 @@ export default function AddPlantioScreen() {
               />
             </FormColumn>
           </FormRow>
-          <FormRow>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Previsão de Colheita</Text>
-              <TextInput
-                style={styles.input}
-                value={dataPrevistaColheita}
-                onChangeText={(t) => setDataPrevistaColheita(maskDate(t))}
-                placeholder="DD/MM/AAAA"
-                keyboardType="numeric"
-                maxLength={10}
-              />
-            </FormColumn>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Data de Maturação</Text>
-              <TextInput
-                style={styles.input}
-                value={dataMaturacao}
-                onChangeText={(t) => setDataMaturacao(maskDate(t))}
-                placeholder="DD/MM/AAAA"
-                keyboardType="numeric"
-                maxLength={10}
-              />
-            </FormColumn>
-          </FormRow>
-          <FormRow>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Área Plantada (ha) *</Text>
-              <TextInput
-                style={styles.input}
-                value={areaPlantada}
-                onChangeText={setAreaPlantada}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Densidade Planejada *</Text>
-              <TextInput
-                style={styles.input}
-                value={densidadePlanejada}
-                onChangeText={setDensidadePlanejada}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-          </FormRow>
-          <FormRow>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Densidade Plantio Real</Text>
-              <TextInput
-                style={styles.input}
-                value={densidadePlantioReal}
-                onChangeText={setDensidadePlantioReal}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-            <FormColumn>
-              <Text style={styles.inputLabel}>pH Solo Inicial</Text>
-              <TextInput
-                style={styles.input}
-                value={phSoloInicial}
-                onChangeText={setPhSoloInicial}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-          </FormRow>
-          <FormRow>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Umidade Solo Inicial</Text>
-              <TextInput
-                style={styles.input}
-                value={umidadeSoloInicial}
-                onChangeText={setUmidadeSoloInicial}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Espaçamento (linhas)</Text>
-              <TextInput
-                style={styles.input}
-                value={espacamentoEntreLinhas}
-                onChangeText={setEspacamentoEntreLinhas}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-          </FormRow>
-          <FormRow>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Lote de Semente</Text>
-              <TextInput
-                style={styles.input}
-                value={loteSemente}
-                onChangeText={setLoteSemente}
-              />
-            </FormColumn>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Taxa de Germinação (%)</Text>
-              <TextInput
-                style={styles.input}
-                value={taxaGerminacao}
-                onChangeText={setTaxaGerminacao}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-          </FormRow>
-          <FormRow>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Tratamento de Semente</Text>
-              <TextInput
-                style={styles.input}
-                value={tratamentoSemente}
-                onChangeText={setTratamentoSemente}
-              />
-            </FormColumn>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Profundidade Semeadura</Text>
-              <TextInput
-                style={styles.input}
-                value={profundidadeSemeadura}
-                onChangeText={setProfundidadeSemeadura}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-          </FormRow>
-          <FormRow>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Orientação Transplantio</Text>
-              <TextInput
-                style={styles.input}
-                value={orientacaoTransplantio}
-                onChangeText={setOrientacaoTransplantio}
-              />
-            </FormColumn>
-          </FormRow>
-
-          <Text style={styles.sectionTitle}>Irrigação</Text>
-          <FormRow>
-            <FormColumn>
-              <Text style={styles.inputLabel}>mm de Água Aplicado</Text>
-              <TextInput
-                style={styles.input}
-                value={mmAguaAplicado}
-                onChangeText={setMmAguaAplicado}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Volume de Irrigação</Text>
-              <TextInput
-                style={styles.input}
-                value={irrigacaoVolume}
-                onChangeText={setIrrigacaoVolume}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Duração da Irrigação</Text>
-              <TextInput
-                style={styles.input}
-                value={irrigacaoDuracao}
-                onChangeText={setIrrigacaoDuracao}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-          </FormRow>
-
           <Text style={styles.sectionTitle}>Adubação e Defensivos</Text>
           <Text style={styles.inputLabel}>Dose de Nitrogênio (N)</Text>
           <FormRow>
@@ -568,7 +440,6 @@ export default function AddPlantioScreen() {
               />
             </FormColumn>
           </FormRow>
-
           <Text style={styles.inputLabel}>Defensivo Utilizado</Text>
           <TextInput
             style={styles.input}
@@ -576,7 +447,6 @@ export default function AddPlantioScreen() {
             onChangeText={setDefensivoUtilizado}
             placeholder="Nome do produto"
           />
-
           <Text style={styles.inputLabel}>Dose do Defensivo</Text>
           <FormRow>
             <FormColumn flex={2}>
@@ -596,7 +466,6 @@ export default function AddPlantioScreen() {
               />
             </FormColumn>
           </FormRow>
-
           <Text style={styles.sectionTitle}>Custos</Text>
           <FormRow>
             <FormColumn>
@@ -618,38 +487,6 @@ export default function AddPlantioScreen() {
               />
             </FormColumn>
           </FormRow>
-          <FormRow>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Custo do Defensivo</Text>
-              <TextInput
-                style={styles.input}
-                value={custoDefensivo}
-                onChangeText={setCustoDefensivo}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Custo do Combustível</Text>
-              <TextInput
-                style={styles.input}
-                value={custoCombustivel}
-                onChangeText={setCustoCombustivel}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-          </FormRow>
-          <FormRow>
-            <FormColumn>
-              <Text style={styles.inputLabel}>Outros Custos</Text>
-              <TextInput
-                style={styles.input}
-                value={custoOutros}
-                onChangeText={setCustoOutros}
-                keyboardType="numeric"
-              />
-            </FormColumn>
-          </FormRow>
-
           <Text style={styles.sectionTitle}>Observações</Text>
           <Text style={styles.inputLabel}>Status do Plantio</Text>
           <CustomPicker
@@ -665,59 +502,65 @@ export default function AddPlantioScreen() {
             multiline
             placeholder="Digite aqui..."
           />
-        {isEditing && (
+        </ScrollView>
+
+        <View style={styles.buttonContainer}>
+          {isEditing && (
+            <TouchableOpacity
+              style={styles.deleteButton}
+              onPress={handleDeletePlantio}
+              disabled={isLoading}
+            >
+              <Text style={styles.buttonText}>DELETAR</Text>
+            </TouchableOpacity>
+          )}
           <TouchableOpacity
-            style={[styles.deleteButton, { marginBottom: 10 }]}
-            onPress={handleDeletePlantio}
+            style={styles.saveButton}
+            onPress={handleSavePlantio}
             disabled={isLoading}
           >
             {isLoading ? (
               <ActivityIndicator color={colors.white} />
             ) : (
-              <Text style={styles.deleteButtonText}>DELETAR PLANTIO</Text>
+              <Text style={styles.buttonText}>
+                {isEditing ? "SALVAR ALTERAÇÕES" : "CRIAR PLANTIO"}
+              </Text>
             )}
           </TouchableOpacity>
-        )}
+        </View>
+      </KeyboardAvoidingView>
 
-        <TouchableOpacity
-          style={styles.createButton}
-          onPress={handleSavePlantio}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color={colors.white} />
-          ) : (
-            <Text style={styles.createButtonText}>
-              {isEditing ? "SALVAR ALTERAÇÕES" : "CRIAR PLANTIO"}
-            </Text>
-          )}
-        </TouchableOpacity>
-        </ScrollView>
-
-      </View>
-    </KeyboardAvoidingView>
+      <Modal
+        visible={isAnaliseModalVisible}
+        animationType="slide"
+        onRequestClose={() => setAnaliseModalVisible(false)}
+      >
+        <AnaliseSoloScreen
+          farmId={farmId}
+          onClose={() => setAnaliseModalVisible(false)}
+          onSave={handleSaveAnaliseData}
+        />
+      </Modal>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.primary },
+  container: { flex: 1, backgroundColor: "#1E322D" },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     paddingHorizontal: 15,
-    paddingTop: Platform.OS === "ios" ? 50 : 40,
+    paddingTop: Platform.OS === "ios" ? 10 : 15,
     paddingBottom: 15,
     backgroundColor: colors.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(255,255,255,0.2)",
   },
   backButton: { padding: 5 },
   headerTitle: { color: colors.white, fontSize: 20, fontWeight: "bold" },
   formContent: {
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: "#1E322D",
   },
   sectionTitle: {
     fontSize: 18,
@@ -749,28 +592,49 @@ const styles = StyleSheet.create({
     alignItems: "flex-end",
   },
   column: { flex: 1, marginHorizontal: 5 },
-  createButton: {
+  buttonContainer: {
+    padding: 20,
+    backgroundColor: "#1E322D",
+    borderTopWidth: 1,
+    borderTopColor: "rgba(255,255,255,0.1)",
+  },
+  saveButton: {
     backgroundColor: colors.secondary,
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: "center",
-    marginTop: 20,
-    height: 54,
     justifyContent: "center",
+    height: 54,
   },
-  createButtonText: { color: colors.white, fontSize: 18, fontWeight: "bold" },
   deleteButton: {
-    backgroundColor: "#FF6347", // Tomato color
+    backgroundColor: colors.danger,
     borderRadius: 8,
     paddingVertical: 15,
     alignItems: "center",
-    marginTop: 10,
-    height: 54,
     justifyContent: "center",
+    height: 54,
+    marginBottom: 10,
   },
-  deleteButtonText: {
+  buttonText: { color: colors.white, fontSize: 16, fontWeight: "bold" },
+  analiseButton: {
+    backgroundColor: "#007BFF", // Um azul para diferenciar
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 15,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  analiseButtonText: {
     color: colors.white,
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "bold",
+    marginLeft: 10,
+  },
+  analiseStatusText: {
+    color: "rgba(255,255,255,0.7)",
+    textAlign: "center",
+    marginTop: 8,
+    fontStyle: "italic",
   },
 });
