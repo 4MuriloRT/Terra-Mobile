@@ -1,6 +1,6 @@
 // Em: src/pages/Plantio/AnaliseSoloScreen.tsx
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -16,16 +16,32 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../components/Colors";
 
-// Tipagem dos dados que o formulário manipula e retorna
+// Tipagem completa para os dados da análise
 type AnaliseSoloData = {
-  /* ... adicione os campos da análise aqui ... */
+  id?: number;
+  ph: number;
+  areaTotal: number;
+  hAl: number;
+  sb: number;
+  ctc: number;
+  v: number;
+  m: number;
+  mo: number;
+  valorCultural: number;
+  prnt: number;
+  n: number;
+  p: number;
+  k: number;
 };
 
+// Props da tela
 interface Props {
-  // Funções passadas pela tela "pai" (AddPlantioScreen)
+  userId?: string;
+  farmId: string;
+  initialData?: AnaliseSoloData | null;
   onClose: () => void;
   onSave: (data: AnaliseSoloData) => void;
-  farmId: string; // ID da fazenda para associar a análise
+  onDelete: (id: number) => void;
 }
 
 const FormRow = ({ children }: { children: React.ReactNode }) => (
@@ -35,10 +51,18 @@ const FormColumn = ({ children }: { children: React.ReactNode }) => (
   <View style={styles.column}>{children}</View>
 );
 
-export default function AnaliseSoloScreen({ onClose, onSave, farmId }: Props) {
+export default function AnaliseSoloScreen({
+  userId,
+  farmId,
+  initialData,
+  onClose,
+  onSave,
+  onDelete,
+}: Props) {
   const [isLoading, setIsLoading] = useState(false);
+  const isEditing = !!initialData?.id;
 
-  // Estados para os campos da análise de solo, conforme a imagem do swagger
+  // Estados para os campos do formulário (sempre strings)
   const [ph, setPh] = useState("");
   const [areaTotal, setAreaTotal] = useState("");
   const [hAl, setHAl] = useState("");
@@ -53,13 +77,35 @@ export default function AnaliseSoloScreen({ onClose, onSave, farmId }: Props) {
   const [p, setP] = useState("");
   const [k, setK] = useState("");
 
-  const handleCreate = () => {
+  useEffect(() => {
+    if (initialData) {
+      setPh(String(initialData.ph ?? ""));
+      setAreaTotal(String(initialData.areaTotal ?? ""));
+      setHAl(String(initialData.hAl ?? ""));
+      setSb(String(initialData.sb ?? ""));
+      setCtc(String(initialData.ctc ?? ""));
+      setV(String(initialData.v ?? ""));
+      setM(String(initialData.m ?? ""));
+      setMo(String(initialData.mo ?? ""));
+      setValorCultural(String(initialData.valorCultural ?? ""));
+      setPrnt(String(initialData.prnt ?? ""));
+      setN(String(initialData.n ?? ""));
+      setP(String(initialData.p ?? ""));
+      setK(String(initialData.k ?? ""));
+    }
+  }, [initialData]);
+
+  const handleSave = () => {
     if (!ph || !areaTotal) {
       Alert.alert("Campos Obrigatórios", "pH e Área Total são necessários.");
       return;
     }
 
+    // ✅ CORREÇÃO FINAL: Garante que todos os campos sejam números, usando 0 como padrão.
+    // Isso imita o comportamento da biblioteca de validação da sua aplicação web.
     const analiseData = {
+      id: initialData?.id,
+      idUsuario: Number(userId),
       ph: parseFloat(ph.replace(",", ".")) || 0,
       areaTotal: parseFloat(areaTotal.replace(",", ".")) || 0,
       hAl: parseFloat(hAl.replace(",", ".")) || 0,
@@ -73,17 +119,33 @@ export default function AnaliseSoloScreen({ onClose, onSave, farmId }: Props) {
       n: parseFloat(n.replace(",", ".")) || 0,
       p: parseFloat(p.replace(",", ".")) || 0,
       k: parseFloat(k.replace(",", ".")) || 0,
-      idFazenda: parseInt(farmId, 10),
     };
 
-    // Em vez de chamar a API aqui, retornamos os dados para a tela de Plantio
-    onSave(analiseData);
+    onSave(analiseData as AnaliseSoloData);
+  };
+
+  const handleDelete = () => {
+    if (!initialData?.id) return;
+    Alert.alert(
+      "Confirmar Exclusão",
+      "Deseja realmente deletar esta Análise de Solo?",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Deletar",
+          style: "destructive",
+          onPress: () => onDelete(initialData.id!),
+        },
+      ]
+    );
   };
 
   return (
     <SafeAreaView style={styles.modalContainer}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Adicionar Análise de Solo</Text>
+        <Text style={styles.headerTitle}>
+          {isEditing ? "Editar" : "Adicionar"} Análise de Solo
+        </Text>
         <TouchableOpacity onPress={onClose}>
           <Ionicons name="close-circle" size={28} color={colors.white} />
         </TouchableOpacity>
@@ -94,7 +156,6 @@ export default function AnaliseSoloScreen({ onClose, onSave, farmId }: Props) {
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.sectionTitle}>Dados da Análise</Text>
-
         <FormRow>
           <FormColumn>
             <Text style={styles.inputLabel}>pH*</Text>
@@ -225,15 +286,26 @@ export default function AnaliseSoloScreen({ onClose, onSave, farmId }: Props) {
       </ScrollView>
 
       <View style={styles.buttonContainer}>
+        {isEditing && (
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={handleDelete}
+            disabled={isLoading}
+          >
+            <Text style={styles.buttonText}>DELETAR ANÁLISE</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={styles.saveButton}
-          onPress={handleCreate}
+          onPress={handleSave}
           disabled={isLoading}
         >
           {isLoading ? (
             <ActivityIndicator color={colors.white} />
           ) : (
-            <Text style={styles.buttonText}>CRIAR ANÁLISE</Text>
+            <Text style={styles.buttonText}>
+              {isEditing ? "SALVAR ALTERAÇÕES" : "CRIAR ANÁLISE"}
+            </Text>
           )}
         </TouchableOpacity>
       </View>
@@ -294,6 +366,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     height: 54,
+  },
+  deleteButton: {
+    backgroundColor: colors.danger,
+    borderRadius: 8,
+    paddingVertical: 15,
+    alignItems: "center",
+    justifyContent: "center",
+    height: 54,
+    marginBottom: 10,
   },
   buttonText: { color: colors.white, fontSize: 16, fontWeight: "bold" },
 });

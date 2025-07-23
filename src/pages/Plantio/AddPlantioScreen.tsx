@@ -11,7 +11,7 @@ import {
   KeyboardAvoidingView,
   ActivityIndicator,
   SafeAreaView,
-  Modal, // Importação corrigida
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
@@ -27,10 +27,14 @@ import {
   createPlantio,
   updatePlantio,
   deletePlantio as deletePlantioApi,
-  createAnaliseSolo, // Importação adicionada
+  createAnaliseSolo,
+  getAnaliseSoloById,
+  updateAnaliseSolo,
+  deleteAnaliseSolo,
 } from "../../services/api";
 import { CustomPicker } from "../../components/CustomPicker";
 import AnaliseSoloScreen from "./AnaliseSoloScreen";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Tipagem para as props do componente
 type NavigationProp = StackNavigationProp<
@@ -73,7 +77,7 @@ const toISODate = (dateString: string) => {
 const formatDateForInput = (isoDate?: string): string => {
   if (!isoDate) return "";
   const date = new Date(isoDate);
-  if (isNaN(date.getTime())) return ""; // Checagem de data inválida
+  if (isNaN(date.getTime())) return "";
   const day = String(date.getUTCDate()).padStart(2, "0");
   const month = String(date.getUTCMonth() + 1).padStart(2, "0");
   const year = date.getUTCFullYear();
@@ -99,6 +103,7 @@ export default function AddPlantioScreen() {
   const { farmId, cultureType, cultivarId, plantio } = route.params;
   const [isLoading, setIsLoading] = useState(false);
   const isEditing = !!plantio?.id;
+  const { user } = useAuth();
 
   // --- Estados do Formulário ---
   const [dataPlantio, setDataPlantio] = useState("");
@@ -135,8 +140,11 @@ export default function AddPlantioScreen() {
   const [custoOutros, setCustoOutros] = useState("");
   const [statusPlantio, setStatusPlantio] = useState("PLANEJADO");
   const [observacao, setObservacao] = useState("");
+
+  // Estados para Análise de Solo
   const [isAnaliseModalVisible, setAnaliseModalVisible] = useState(false);
   const [dadosAnaliseSolo, setDadosAnaliseSolo] = useState<any>(null);
+  const [analiseParaEditar, setAnaliseParaEditar] = useState<any>(null);
 
   useEffect(() => {
     if (isEditing && plantio) {
@@ -180,23 +188,84 @@ export default function AddPlantioScreen() {
     }
   }, [plantio, isEditing]);
 
+  const handleOpenAnaliseModal = async () => {
+    let dataParaModal = null;
+    if (dadosAnaliseSolo?.id) {
+      setIsLoading(true);
+      try {
+        const token = await AsyncStorage.getItem("@TerraManager:token");
+        if (!token) throw new Error("Token não encontrado.");
+        const response = await getAnaliseSoloById(dadosAnaliseSolo.id, token);
+        dataParaModal = response.data || response;
+      } catch (error) {
+        Alert.alert(
+          "Erro",
+          "Não foi possível carregar os dados da análise existente."
+        );
+        setIsLoading(false);
+        return;
+      }
+      setIsLoading(false);
+    }
+    setAnaliseParaEditar(dataParaModal);
+    setAnaliseModalVisible(true);
+  };
+
+  const handleSaveAnaliseData = async (data: any) => {
+    setIsLoading(true);
+    try {
+      const token = await AsyncStorage.getItem("@TerraManager:token");
+      if (!token) throw new Error("Token não encontrado.");
+
+      let analiseSalva;
+      if (data.id) {
+        const response = await updateAnaliseSolo(data.id, data, token);
+        analiseSalva = response.data || response;
+      } else {
+        const response = await createAnaliseSolo(data, token);
+        analiseSalva = response.data || response;
+      }
+
+      setDadosAnaliseSolo(analiseSalva);
+      setAnaliseModalVisible(false);
+      Alert.alert(
+        "Sucesso",
+        `Análise de solo ${data.id ? "atualizada" : "criada"}.`
+      );
+    } catch (error: any) {
+      Alert.alert("Erro", "Não foi possível salvar a análise de solo.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteAnalise = async (id: number) => {
+    setIsLoading(true);
+    try {
+      const token = await AsyncStorage.getItem("@TerraManager:token");
+      if (!token) throw new Error("Token não encontrado.");
+
+      await deleteAnaliseSolo(id, token);
+      setDadosAnaliseSolo(null);
+      setAnaliseParaEditar(null);
+      setAnaliseModalVisible(false);
+      Alert.alert("Sucesso", "Análise de solo desvinculada e deletada.");
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível deletar a análise.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSavePlantio = async () => {
     if (!dataPlantio || !areaPlantada || !densidadePlanejada) {
       Alert.alert("Erro", "Preencha os campos obrigatórios (*).");
       return;
     }
-
     setIsLoading(true);
     try {
       const token = await AsyncStorage.getItem("@TerraManager:token");
       if (!token) throw new Error("Sessão expirada.");
-
-      let idAnaliseSoloFinal = dadosAnaliseSolo?.id || null;
-
-      if (dadosAnaliseSolo && !dadosAnaliseSolo.id) {
-        const analiseCriada = await createAnaliseSolo(dadosAnaliseSolo, token);
-        idAnaliseSoloFinal = analiseCriada.id;
-      }
 
       const payload = {
         idFazenda: parseInt(farmId, 10),
@@ -204,7 +273,7 @@ export default function AddPlantioScreen() {
           isEditing ? String(plantio.idCultivar) : cultivarId!,
           10
         ),
-        idAnaliseSolo: idAnaliseSoloFinal,
+        idAnaliseSolo: dadosAnaliseSolo?.id || null,
         dataPlantio: toISODate(dataPlantio),
         dataEmergencia: toISODate(dataEmergencia),
         dataPrevistaColheita: toISODate(dataPrevistaColheita),
@@ -262,23 +331,10 @@ export default function AddPlantioScreen() {
         error.response?.data?.message?.[0] ||
         error.message ||
         "Não foi possível conectar ao servidor.";
-      console.error(
-        "Erro ao salvar plantio:",
-        error.response?.data || error.message
-      );
       Alert.alert("Erro ao Salvar", errorMessage);
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleSaveAnaliseData = (data: any) => {
-    setDadosAnaliseSolo(data);
-    setAnaliseModalVisible(false);
-    Alert.alert(
-      "Análise Preenchida",
-      "Os dados foram salvos. Salve o plantio para confirmar a associação."
-    );
   };
 
   const handleDeletePlantio = () => {
@@ -340,20 +396,25 @@ export default function AddPlantioScreen() {
           <Text style={styles.sectionTitle}>Análise de Solo (Opcional)</Text>
           <TouchableOpacity
             style={styles.analiseButton}
-            onPress={() => setAnaliseModalVisible(true)}
+            onPress={handleOpenAnaliseModal}
+            disabled={isLoading}
           >
-            <Ionicons name="flask-outline" size={22} color={colors.white} />
-            <Text style={styles.analiseButtonText}>
-              {dadosAnaliseSolo
-                ? "Visualizar / Editar Análise"
-                : "Adicionar Análise de Solo"}
-            </Text>
+            {isLoading && !isAnaliseModalVisible ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <>
+                <Ionicons name="flask-outline" size={22} color={colors.white} />
+                <Text style={styles.analiseButtonText}>
+                  {dadosAnaliseSolo
+                    ? "Visualizar / Editar Análise"
+                    : "Adicionar Análise de Solo"}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
           {dadosAnaliseSolo && (
             <Text style={styles.analiseStatusText}>
-              {dadosAnaliseSolo.id
-                ? `Análise ID ${dadosAnaliseSolo.id} associada.`
-                : "Análise preenchida e pronta para salvar."}
+              {`Análise ID ${dadosAnaliseSolo.id} associada.`}
             </Text>
           )}
 
@@ -382,6 +443,170 @@ export default function AddPlantioScreen() {
               />
             </FormColumn>
           </FormRow>
+          <FormRow>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Previsão de Colheita</Text>
+              <TextInput
+                style={styles.input}
+                value={dataPrevistaColheita}
+                onChangeText={(t) => setDataPrevistaColheita(maskDate(t))}
+                placeholder="DD/MM/AAAA"
+                keyboardType="numeric"
+                maxLength={10}
+              />
+            </FormColumn>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Data de Maturação</Text>
+              <TextInput
+                style={styles.input}
+                value={dataMaturacao}
+                onChangeText={(t) => setDataMaturacao(maskDate(t))}
+                placeholder="DD/MM/AAAA"
+                keyboardType="numeric"
+                maxLength={10}
+              />
+            </FormColumn>
+          </FormRow>
+          <FormRow>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Área Plantada (ha) *</Text>
+              <TextInput
+                style={styles.input}
+                value={areaPlantada}
+                onChangeText={setAreaPlantada}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Densidade Planejada *</Text>
+              <TextInput
+                style={styles.input}
+                value={densidadePlanejada}
+                onChangeText={setDensidadePlanejada}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+          </FormRow>
+          <FormRow>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Densidade Plantio Real</Text>
+              <TextInput
+                style={styles.input}
+                value={densidadePlantioReal}
+                onChangeText={setDensidadePlantioReal}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+            <FormColumn>
+              <Text style={styles.inputLabel}>pH Solo Inicial</Text>
+              <TextInput
+                style={styles.input}
+                value={phSoloInicial}
+                onChangeText={setPhSoloInicial}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+          </FormRow>
+          <FormRow>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Umidade Solo Inicial</Text>
+              <TextInput
+                style={styles.input}
+                value={umidadeSoloInicial}
+                onChangeText={setUmidadeSoloInicial}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Espaçamento (linhas)</Text>
+              <TextInput
+                style={styles.input}
+                value={espacamentoEntreLinhas}
+                onChangeText={setEspacamentoEntreLinhas}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+          </FormRow>
+          <FormRow>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Lote de Semente</Text>
+              <TextInput
+                style={styles.input}
+                value={loteSemente}
+                onChangeText={setLoteSemente}
+              />
+            </FormColumn>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Taxa de Germinação (%)</Text>
+              <TextInput
+                style={styles.input}
+                value={taxaGerminacao}
+                onChangeText={setTaxaGerminacao}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+          </FormRow>
+          <FormRow>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Tratamento de Semente</Text>
+              <TextInput
+                style={styles.input}
+                value={tratamentoSemente}
+                onChangeText={setTratamentoSemente}
+              />
+            </FormColumn>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Profundidade Semeadura</Text>
+              <TextInput
+                style={styles.input}
+                value={profundidadeSemeadura}
+                onChangeText={setProfundidadeSemeadura}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+          </FormRow>
+          <FormRow>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Orientação Transplantio</Text>
+              <TextInput
+                style={styles.input}
+                value={orientacaoTransplantio}
+                onChangeText={setOrientacaoTransplantio}
+              />
+            </FormColumn>
+          </FormRow>
+
+          <Text style={styles.sectionTitle}>Irrigação</Text>
+          <FormRow>
+            <FormColumn>
+              <Text style={styles.inputLabel}>mm de Água Aplicado</Text>
+              <TextInput
+                style={styles.input}
+                value={mmAguaAplicado}
+                onChangeText={setMmAguaAplicado}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Volume de Irrigação</Text>
+              <TextInput
+                style={styles.input}
+                value={irrigacaoVolume}
+                onChangeText={setIrrigacaoVolume}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Duração da Irrigação</Text>
+              <TextInput
+                style={styles.input}
+                value={irrigacaoDuracao}
+                onChangeText={setIrrigacaoDuracao}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+          </FormRow>
+
           <Text style={styles.sectionTitle}>Adubação e Defensivos</Text>
           <Text style={styles.inputLabel}>Dose de Nitrogênio (N)</Text>
           <FormRow>
@@ -466,6 +691,7 @@ export default function AddPlantioScreen() {
               />
             </FormColumn>
           </FormRow>
+
           <Text style={styles.sectionTitle}>Custos</Text>
           <FormRow>
             <FormColumn>
@@ -487,6 +713,38 @@ export default function AddPlantioScreen() {
               />
             </FormColumn>
           </FormRow>
+          <FormRow>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Custo do Defensivo</Text>
+              <TextInput
+                style={styles.input}
+                value={custoDefensivo}
+                onChangeText={setCustoDefensivo}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Custo do Combustível</Text>
+              <TextInput
+                style={styles.input}
+                value={custoCombustivel}
+                onChangeText={setCustoCombustivel}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+          </FormRow>
+          <FormRow>
+            <FormColumn>
+              <Text style={styles.inputLabel}>Outros Custos</Text>
+              <TextInput
+                style={styles.input}
+                value={custoOutros}
+                onChangeText={setCustoOutros}
+                keyboardType="numeric"
+              />
+            </FormColumn>
+          </FormRow>
+
           <Text style={styles.sectionTitle}>Observações</Text>
           <Text style={styles.inputLabel}>Status do Plantio</Text>
           <CustomPicker
@@ -511,7 +769,7 @@ export default function AddPlantioScreen() {
               onPress={handleDeletePlantio}
               disabled={isLoading}
             >
-              <Text style={styles.buttonText}>DELETAR</Text>
+              <Text style={styles.buttonText}>DELETAR PLANTIO</Text>
             </TouchableOpacity>
           )}
           <TouchableOpacity
@@ -530,15 +788,14 @@ export default function AddPlantioScreen() {
         </View>
       </KeyboardAvoidingView>
 
-      <Modal
-        visible={isAnaliseModalVisible}
-        animationType="slide"
-        onRequestClose={() => setAnaliseModalVisible(false)}
-      >
+      <Modal visible={isAnaliseModalVisible} animationType="slide">
         <AnaliseSoloScreen
           farmId={farmId}
+          userId={user?.id} // Adicione esta prop
+          initialData={analiseParaEditar}
           onClose={() => setAnaliseModalVisible(false)}
           onSave={handleSaveAnaliseData}
+          onDelete={handleDeleteAnalise}
         />
       </Modal>
     </SafeAreaView>
@@ -558,10 +815,7 @@ const styles = StyleSheet.create({
   },
   backButton: { padding: 5 },
   headerTitle: { color: colors.white, fontSize: 20, fontWeight: "bold" },
-  formContent: {
-    paddingHorizontal: 20,
-    paddingBottom: 20,
-  },
+  formContent: { paddingHorizontal: 20, paddingBottom: 20 },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "bold",
@@ -586,11 +840,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.textPrimary,
   },
-  row: {
-    flexDirection: "row",
-    marginHorizontal: -5,
-    alignItems: "flex-end",
-  },
+  row: { flexDirection: "row", marginHorizontal: -5, alignItems: "flex-end" },
   column: { flex: 1, marginHorizontal: 5 },
   buttonContainer: {
     padding: 20,
@@ -617,7 +867,7 @@ const styles = StyleSheet.create({
   },
   buttonText: { color: colors.white, fontSize: 16, fontWeight: "bold" },
   analiseButton: {
-    backgroundColor: "#007BFF", // Um azul para diferenciar
+    backgroundColor: "#007BFF",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",

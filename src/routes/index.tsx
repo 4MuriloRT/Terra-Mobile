@@ -16,7 +16,8 @@ import PlantioScreen from "../pages/Plantio/PlantioScreen";
 import ListPlantioScreen from "../pages/Plantio/ListPlantioScreen";
 import SelectCultivarScreen from "../pages/Plantio/SelectCultivarScreen";
 import AddPlantioScreen from "../pages/Plantio/AddPlantioScreen";
-import AnaliseSoloScreen from "../pages/Plantio/AnaliseSoloScreen";
+//import AnaliseSoloScreen from "../pages/Plantio/AnaliseSoloScreen";
+import ResultadoAnaliseSoloScreen from "../pages/Plantio/ResultadoAnaliseSoloScreen";
 
 const Stack = createStackNavigator();
 
@@ -95,9 +96,10 @@ export default function Routes() {
         component={AddPlantioScreen}
         options={{ headerShown: false }}
       />
+      
       <Stack.Screen
-        name="AnaliseSoloScreen"
-        component={AnaliseSoloScreen}
+        name="ResultadoAnaliseSoloScreen"
+        component={ResultadoAnaliseSoloScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

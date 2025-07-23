@@ -221,6 +221,72 @@ export const createAnaliseSolo = async (analiseData: any, token: string) => {
   return response.json();
 };
 
+export const getAnaliseSoloById = async (id: number, token: string) => {
+  const endpoint = `/analise-solo/${id}`;
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Não foi possível buscar os dados da análise.");
+  return response.json();
+};
+
+export const updateAnaliseSolo = async (id: number, data: any, token: string) => {
+  const endpoint = `/analise-solo/${id}`;
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  });
+  if (!response.ok) throw new Error("Não foi possível atualizar a análise de solo.");
+  return response.json();
+};
+
+export const deleteAnaliseSolo = async (id: number, token: string) => {
+  const endpoint = `/analise-solo/${id}`;
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (response.status !== 204 && response.status !== 200) { // Status 204 é comum para delete
+    throw new Error("Não foi possível deletar a análise de solo.");
+  }
+  return response.ok;
+};
+
+export const getCalculoCalagem = async (idPlantio: number, token: string) => {
+  const endpoint = `/analise-solo/calagem/${idPlantio}`;
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Não foi possível buscar o cálculo de calagem.");
+  return response.json();
+};
+
+export const getCalculoAdubacao = async (idPlantio: number, token: string) => {
+  const endpoint = `/analise-solo/adubacao/${idPlantio}`;
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Não foi possível buscar o cálculo de adubação.");
+  return response.json();
+};
+
+export const getComparativoNutrientes = async (idPlantio: number, token: string) => {
+  const endpoint = `/analise-solo/comparativo-nutrientes/${idPlantio}`;
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: "GET",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!response.ok) throw new Error("Não foi possível buscar o comparativo de nutrientes.");
+  return response.json();
+};
+
 export const fetchPlantiosByFazenda = async (
   fazendaId: string,
   tipoPlanta: string, // Adicionamos o tipoPlanta como parâmetro

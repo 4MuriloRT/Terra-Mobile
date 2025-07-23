@@ -58,8 +58,12 @@ export default function SelectCultivarScreen() {
   }, [cultureType]);
 
   const handleSelectCultivar = (cultivarId: string) => {
-    navigation.navigate("AddPlantioScreen", { farmId, cultivarId });
-  };
+    navigation.navigate('AddPlantioScreen', { 
+        farmId, 
+        cultivarId, 
+        cultureType 
+    });
+};
 
   const renderItem = ({ item }: { item: Cultivar }) => (
     <TouchableOpacity

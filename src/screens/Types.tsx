@@ -98,5 +98,6 @@ export type RootStackParamList = {
     cultivarId?: string; // Para novos plantios
     plantio?: Plantio;
   };
+  ResultadoAnaliseSoloScreen: { plantioId: number };
   //AnaliseSoloScreen: { farmId: string; dadosPlantio: any };
 };
