@@ -1,5 +1,3 @@
-// Em: src/pages/Plantio/AnaliseSoloScreen.tsx
-
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -16,12 +14,12 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { colors } from "../../components/Colors";
 
-// Tipagem completa para os dados da análise
+// Tipagem para os dados da análise
 type AnaliseSoloData = {
   id?: number;
   ph: number;
   areaTotal: number;
-  hAl: number;
+  hAi: number; // Corrigido de hAl para hAi
   sb: number;
   ctc: number;
   v: number;
@@ -36,7 +34,6 @@ type AnaliseSoloData = {
 
 // Props da tela
 interface Props {
-  userId?: string;
   farmId: string;
   initialData?: AnaliseSoloData | null;
   onClose: () => void;
@@ -52,7 +49,6 @@ const FormColumn = ({ children }: { children: React.ReactNode }) => (
 );
 
 export default function AnaliseSoloScreen({
-  userId,
   farmId,
   initialData,
   onClose,
@@ -62,10 +58,10 @@ export default function AnaliseSoloScreen({
   const [isLoading, setIsLoading] = useState(false);
   const isEditing = !!initialData?.id;
 
-  // Estados para os campos do formulário (sempre strings)
+  // Estados para os campos do formulário
   const [ph, setPh] = useState("");
   const [areaTotal, setAreaTotal] = useState("");
-  const [hAl, setHAl] = useState("");
+  const [hAi, setHAi] = useState(""); // Estado renomeado
   const [sb, setSb] = useState("");
   const [ctc, setCtc] = useState("");
   const [v, setV] = useState("");
@@ -81,7 +77,7 @@ export default function AnaliseSoloScreen({
     if (initialData) {
       setPh(String(initialData.ph ?? ""));
       setAreaTotal(String(initialData.areaTotal ?? ""));
-      setHAl(String(initialData.hAl ?? ""));
+      setHAi(String(initialData.hAi ?? "")); // Campo atualizado
       setSb(String(initialData.sb ?? ""));
       setCtc(String(initialData.ctc ?? ""));
       setV(String(initialData.v ?? ""));
@@ -101,14 +97,11 @@ export default function AnaliseSoloScreen({
       return;
     }
 
-    // ✅ CORREÇÃO FINAL: Garante que todos os campos sejam números, usando 0 como padrão.
-    // Isso imita o comportamento da biblioteca de validação da sua aplicação web.
     const analiseData = {
       id: initialData?.id,
-      idUsuario: Number(userId),
       ph: parseFloat(ph.replace(",", ".")) || 0,
       areaTotal: parseFloat(areaTotal.replace(",", ".")) || 0,
-      hAl: parseFloat(hAl.replace(",", ".")) || 0,
+      hAi: parseFloat(hAi.replace(",", ".")) || 0, // Campo atualizado
       sb: parseFloat(sb.replace(",", ".")) || 0,
       ctc: parseFloat(ctc.replace(",", ".")) || 0,
       v: parseFloat(v.replace(",", ".")) || 0,
@@ -120,7 +113,6 @@ export default function AnaliseSoloScreen({
       p: parseFloat(p.replace(",", ".")) || 0,
       k: parseFloat(k.replace(",", ".")) || 0,
     };
-
     onSave(analiseData as AnaliseSoloData);
   };
 
@@ -179,8 +171,8 @@ export default function AnaliseSoloScreen({
             <Text style={styles.inputLabel}>H+Al (cmolc/dm³)</Text>
             <TextInput
               style={styles.input}
-              value={hAl}
-              onChangeText={setHAl}
+              value={hAi}
+              onChangeText={setHAi}
               keyboardType="numeric"
             />
           </FormColumn>
@@ -281,6 +273,12 @@ export default function AnaliseSoloScreen({
               onChangeText={setK}
               keyboardType="numeric"
             />
+          </FormColumn>
+          <FormColumn>
+            <View />
+          </FormColumn>
+          <FormColumn>
+            <View />
           </FormColumn>
         </FormRow>
       </ScrollView>

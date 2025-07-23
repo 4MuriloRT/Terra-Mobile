@@ -34,7 +34,6 @@ import {
 } from "../../services/api";
 import { CustomPicker } from "../../components/CustomPicker";
 import AnaliseSoloScreen from "./AnaliseSoloScreen";
-import { useAuth } from "../../contexts/AuthContext";
 
 // Tipagem para as props do componente
 type NavigationProp = StackNavigationProp<
@@ -103,7 +102,6 @@ export default function AddPlantioScreen() {
   const { farmId, cultureType, cultivarId, plantio } = route.params;
   const [isLoading, setIsLoading] = useState(false);
   const isEditing = !!plantio?.id;
-  const { user } = useAuth();
 
   // --- Estados do Formulário ---
   const [dataPlantio, setDataPlantio] = useState("");
@@ -141,7 +139,6 @@ export default function AddPlantioScreen() {
   const [statusPlantio, setStatusPlantio] = useState("PLANEJADO");
   const [observacao, setObservacao] = useState("");
 
-  // Estados para Análise de Solo
   const [isAnaliseModalVisible, setAnaliseModalVisible] = useState(false);
   const [dadosAnaliseSolo, setDadosAnaliseSolo] = useState<any>(null);
   const [analiseParaEditar, setAnaliseParaEditar] = useState<any>(null);
@@ -233,7 +230,20 @@ export default function AddPlantioScreen() {
         `Análise de solo ${data.id ? "atualizada" : "criada"}.`
       );
     } catch (error: any) {
-      Alert.alert("Erro", "Não foi possível salvar a análise de solo.");
+      const errorMessages = (error as any).response?.data?.message;
+      let detailedError = "Não foi possível salvar a análise de solo.";
+
+      if (Array.isArray(errorMessages)) {
+        detailedError = errorMessages.join("\n");
+      } else if (typeof errorMessages === "string") {
+        detailedError = errorMessages;
+      }
+
+      console.error(
+        "ERRO DETALHADO DA API:",
+        JSON.stringify((error as any).response?.data, null, 2)
+      );
+      Alert.alert("Erro de Validação", detailedError);
     } finally {
       setIsLoading(false);
     }
@@ -412,7 +422,7 @@ export default function AddPlantioScreen() {
               </>
             )}
           </TouchableOpacity>
-          {dadosAnaliseSolo && (
+          {dadosAnaliseSolo?.id && (
             <Text style={styles.analiseStatusText}>
               {`Análise ID ${dadosAnaliseSolo.id} associada.`}
             </Text>
@@ -791,7 +801,6 @@ export default function AddPlantioScreen() {
       <Modal visible={isAnaliseModalVisible} animationType="slide">
         <AnaliseSoloScreen
           farmId={farmId}
-          userId={user?.id} // Adicione esta prop
           initialData={analiseParaEditar}
           onClose={() => setAnaliseModalVisible(false)}
           onSave={handleSaveAnaliseData}
