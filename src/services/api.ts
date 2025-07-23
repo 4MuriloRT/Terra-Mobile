@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Farm, Cultivar } from "../screens/Types"; // Caminho corrigido
 
 // URL base do seu servidor backend
-const API_BASE_URL = "http://192.168.3.50:3000"; // Use seu IP aqui
+const API_BASE_URL = "http://192.168.3.40:3000"; // Use seu IP aqui
 
 // --- FUNÇÕES AUXILIARES ---
 

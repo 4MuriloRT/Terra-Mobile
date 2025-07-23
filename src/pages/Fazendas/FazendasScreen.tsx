@@ -23,7 +23,7 @@ type FazendasScreenNavigationProp = StackNavigationProp<
   "FazendasScreen"
 >;
 
-const API_BASE_URL = "http://192.168.3.50:3000";
+const API_BASE_URL = "http://192.168.3.40:3000";
 
 export default function FazendasScreen() {
   const navigation = useNavigation<FazendasScreenNavigationProp>();

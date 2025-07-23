@@ -155,9 +155,6 @@ export default function AddCultivoScreen() {
         tempoCicloDias: parseInt(tempoCicloDias, 10) || 0,
         densidadePlantio: parseInt(densidadePlantio, 10) || 0,
         densidadeColheita: parseInt(densidadeColheita, 10) || 0,
-        // Campos removidos que eram obrigatórios no tipo
-        fornecedor: "",
-        praga: "",
       };
 
       if (isEditMode && cultivarToEdit) {
