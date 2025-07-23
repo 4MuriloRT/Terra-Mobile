@@ -67,7 +67,15 @@ export default function ListPlantioScreen() {
 
     // Componente para renderizar cada item da lista (card)
     const renderItem = ({ item }: { item: Plantio }) => (
-        <TouchableOpacity style={styles.card} onPress={() => { /* No futuro, pode navegar para uma tela de detalhes */ }}>
+        <TouchableOpacity
+            style={styles.card}
+            // ✅ Corrigido para passar 'cultureType' e o objeto 'plantio'
+            onPress={() => navigation.navigate('AddPlantioScreen', { 
+                farmId, 
+                cultureType, 
+                plantio: item 
+            })}
+        >
             <View style={styles.cardIconContainer}>
                 <Ionicons name="leaf-outline" size={32} color={colors.primary} />
             </View>

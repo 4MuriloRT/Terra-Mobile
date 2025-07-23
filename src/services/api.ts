@@ -238,6 +238,45 @@ export const fetchPlantiosByFazenda = async (
   return response.json();
 };
 
+export const updatePlantio = async (
+  plantioId: number,
+  data: any,
+  token: string
+ ) => {
+  const endpoint = `/plantio/${plantioId}`;
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+   method: "PUT",
+   headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+   },
+   body: JSON.stringify(data),
+  });
+ 
+  if (!response.ok) {
+   throw new Error("Não foi possível atualizar o plantio.");
+  }
+  return response.json();
+ };
+ 
+ export const deletePlantio = async (
+  plantioId: number,
+  token: string
+ ) => {
+  const endpoint = `/plantio/${plantioId}`;
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+   method: "DELETE",
+   headers: {
+    Authorization: `Bearer ${token}`,
+   },
+  });
+ 
+  if (!response.ok) {
+   throw new Error("Não foi possível deletar o plantio.");
+  }
+  return response.json(); // Ou talvez response.status === 204
+ };
+
 // --- FUNÇÕES PARA O DASHBOARD ---
 export const fetchClima = () =>
   fetchAuthenticated(`/dashboard/clima?city=ARINOS&state=MG&country=BR`);

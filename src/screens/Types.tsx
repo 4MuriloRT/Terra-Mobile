@@ -13,11 +13,44 @@ export type Farm = {
 };
 
 export type Plantio = {
-  id: string;
+  id: number;
+  idCultivar: number;
   dataPlantio: string;
+  dataEmergencia?: string;
+  dataPrevistaColheita?: string;
+  dataMaturacao?: string;
   areaPlantada: number;
+  densidadePlanejada: number;
+  densidadePlantioReal?: number;
+  phSoloInicial?: number;
+  umidadeSoloInicial?: number;
+  espacamentoEntreLinhas?: number;
+  loteSemente?: string;
+  taxaGerminacao?: number;
+  tratamentoSemente?: string;
+  profundidadeSemeadura?: number;
+  orientacaoTransplantio?: string;
+  mmAguaAplicado?: number;
+  irrigacaoVolume?: number;
+  irrigacaoDuracao?: number;
+  aduboNitrogenioDose?: number;
+  aduboNitrogenioUnidade?: string;
+  aduboPotassioDose?: number;
+  aduboPotassioUnidade?: string;
+  aduboFosforoDose?: number;
+  aduboFosforoUnidade?: string;
+  defensivoUtilizado?: string;
+  doseDefensivo?: number;
+  unidadeDefensivo?: string;
+  custoSemente?: number;
+  custoFertilizante?: number;
+  custoDefensivo?: number;
+  custoCombustivel?: number;
+  custoOutros?: number;
   statusPlantio: string;
-  cultivar: {
+  observacao?: string;
+  cultivar?: {
+    // Objeto cultivar aninhado
     id: number;
     nomePopular: string;
   };
@@ -54,9 +87,15 @@ export type RootStackParamList = {
   AddFarmScreen: { farm?: Farm }; // Alterado para Farm
   AddCultivoScreen: { cultivar?: Cultivar };
   CultivosScreen: undefined;
+
   PlantioScreen: undefined; // Tela de seleção de cultura
   ListPlantioScreen: { farmId: string; cultureType: string };
   SelectCultivarScreen: { farmId: string; cultureType: string };
-  AddPlantioScreen: { farmId: string; cultivarId: string };
+  AddPlantioScreen: {
+    farmId: string;
+    cultureType: string;
+    cultivarId?: string; // Para novos plantios
+    plantio?: Plantio;
+  };
   //AnaliseSoloScreen: { farmId: string; dadosPlantio: any };
 };
