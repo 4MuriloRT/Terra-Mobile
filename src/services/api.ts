@@ -57,8 +57,33 @@ export const authRegister = async (registerData: {
   password: string;
   cpf?: string;
   telefone?: string;
+  role?: string;
+  plano?: string;
 }) => {
-  const { data } = await api.post("/user", registerData);
+  const { data } = await api.post("/auth/register", registerData);
+  return data;
+};
+
+export const authForgotPassword = async (email: string) => {
+  const { data } = await api.post("/auth/forgot-password", { email });
+  return data;
+};
+
+export const authVerifyResetToken = async (email: string, token: string) => {
+  const { data } = await api.post("/auth/verify-reset-password-token", { email, token });
+  return data;
+};
+
+export const authResetPassword = async (
+  email: string,
+  token: string,
+  newPassword: string
+) => {
+  const { data } = await api.post("/auth/reset-password", {
+    email,
+    token,
+    newPassword,
+  });
   return data;
 };
 

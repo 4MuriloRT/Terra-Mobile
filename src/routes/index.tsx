@@ -8,6 +8,7 @@ import { colors } from "../components/Colors";
 import Welcome from "../pages/Welcome";
 import SignIn from "../pages/SignIn";
 import Register from "../pages/Register";
+import ForgotPassword from "../pages/ForgotPassword";
 
 // Tab Navigator
 import TabRoutes from "../pages/TabNavigator/TabRoutes";
@@ -67,7 +68,12 @@ export default function Routes() {
       <Stack.Screen
         name="Register"
         component={Register}
-        options={{ title: "Cadastro" }}
+        options={{ title: "Criar Conta" }}
+      />
+      <Stack.Screen
+        name="ForgotPassword"
+        component={ForgotPassword}
+        options={{ headerShown: false }}
       />
 
       {/* ── Tab Navigator ── */}
