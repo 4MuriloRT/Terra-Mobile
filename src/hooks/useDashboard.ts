@@ -33,35 +33,39 @@ export const useDashboard = () => {
         setIsLoading(true);
         setError(null);
 
-        const [climaData, cotacaoData, noticiaData] = await Promise.all([
-          fetchClima(),
-          fetchCotacao("SOJA"),
-          fetchNoticia("milho,soja", 7),
-        ]);
+        // Promise.allSettled: mesmo que uma chamada falhe (ex: plano Free),
+        // as outras continuam normalmente. Sem tela de erro por falta de plano PRO.
+        const [climaResult, cotacaoResult, noticiaResult] =
+          await Promise.allSettled([
+            fetchClima(),
+            fetchCotacao("SOJA"),
+            fetchNoticia("milho,soja", 7),
+          ]);
 
-        let climaParaExibir = null;
-        // ✅ CORREÇÃO: Acessa 'previsaoProximosDias' de forma segura com '?.'
-        if (climaData?.previsaoProximosDias?.length > 0) {
-          const today = new Date().toISOString().split("T")[0];
-          climaParaExibir = climaData.previsaoProximosDias.find(
-            (p: any) => p.data === today
-          );
-
-          if (!climaParaExibir) {
-            climaParaExibir = climaData.previsaoProximosDias[0];
+        // Clima (público — raramente falha, mas tratamos mesmo assim)
+        if (climaResult.status === "fulfilled") {
+          const climaData = climaResult.value;
+          let climaParaExibir = null;
+          if (climaData?.previsaoProximosDias?.length > 0) {
+            const today = new Date().toISOString().split("T")[0];
+            climaParaExibir =
+              climaData.previsaoProximosDias.find(
+                (p: any) => p.data === today
+              ) || climaData.previsaoProximosDias[0];
           }
+          setClima(climaParaExibir);
         }
-        setClima(climaParaExibir);
-        
-        // Define a cotação (já era seguro, mas mantemos o padrão)
-        setCotacao(cotacaoData);
 
-        // ✅ **CORREÇÃO PRINCIPAL AQUI**
-        // Acessa 'articles' de forma segura com '?.'.
-        // Se 'noticiaData' for nulo ou indefinido, a expressão retorna undefined,
-        // e o '|| []' garante que 'noticias' será sempre um array.
-        setNoticias(noticiaData?.articles || []);
+        // Cotação (requer plano PRO — pode retornar 403)
+        if (cotacaoResult.status === "fulfilled") {
+          setCotacao(cotacaoResult.value);
+        }
+        // Se falhou por falta de plano, simplesmente fica null (sem crash)
 
+        // Notícias (público — tratamos mesmo assim)
+        if (noticiaResult.status === "fulfilled") {
+          setNoticias(noticiaResult.value?.articles || []);
+        }
       } catch (err: any) {
         setError(err.message || "Ocorreu um erro ao carregar os dados.");
         console.error("Erro no useDashboard:", err);

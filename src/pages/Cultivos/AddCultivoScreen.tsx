@@ -158,10 +158,10 @@ export default function AddCultivoScreen() {
       };
 
       if (isEditMode && cultivarToEdit) {
-        await updateCultivar(cultivarToEdit.id, cultivarData, token);
+        await updateCultivar(cultivarToEdit.id, cultivarData);
         Alert.alert("Sucesso!", "Cultivar atualizado com sucesso.");
       } else {
-        await createCultivar(cultivarData as Omit<Cultivar, "id">, token);
+        await createCultivar(cultivarData as Omit<Cultivar, "id">);
         Alert.alert("Sucesso!", "Cultivar cadastrado com sucesso.");
       }
       navigation.goBack();

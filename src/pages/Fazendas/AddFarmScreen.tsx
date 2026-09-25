@@ -91,10 +91,10 @@ export default function AddFarmScreen() {
 
       if (isEditMode && farmToEdit) {
         // CORREÇÃO: 'id' é uma string, não precisa de Number()
-        await updateFarm(farmToEdit.id, farmData, token);
+        await updateFarm(farmToEdit.id, farmData);
         Alert.alert("Sucesso!", "Fazenda atualizada com sucesso.");
       } else {
-        await createFarm(farmData, token);
+        await createFarm(farmData);
         Alert.alert("Sucesso!", "Fazenda cadastrada com sucesso.");
       }
       navigation.goBack();
@@ -125,7 +125,7 @@ export default function AddFarmScreen() {
                 return;
               }
               // CORREÇÃO: 'id' é uma string, não precisa de Number()
-              await deleteFarm(farmToEdit.id, token);
+              await deleteFarm(farmToEdit.id);
               Alert.alert("Sucesso!", "Fazenda deletada com sucesso.");
               navigation.goBack();
             } catch (error: any) {

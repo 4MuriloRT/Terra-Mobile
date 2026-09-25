@@ -1,8 +1,18 @@
-import React, { createContext, useState, useContext, ReactNode } from "react";
-// Lembre-se de instalar: npx expo install @react-native-async-storage/async-storage
-import AsyncStorage from "@react-native-async-storage/async-storage";
+// src/contexts/AuthContext.tsx
+// Contexto de autenticação com persistência de sessão e limpeza no logout
 
-// Define o formato do objeto de usuário e do contexto
+import React, {
+  createContext,
+  useState,
+  useContext,
+  useEffect,
+  ReactNode,
+} from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { clearAllOfflineData } from "../services/offlineStorage";
+
+// ─── TIPOS ────────────────────────────────────────────────────────────────────
+
 interface User {
   id: string;
   nome: string;
@@ -12,42 +22,75 @@ interface User {
 
 interface AuthContextData {
   user: User | null;
+  token: string | null;
+  isLoadingAuth: boolean;
   login(user: User, token: string): Promise<void>;
   logout(): Promise<void>;
 }
 
+// ─── CONTEXTO ─────────────────────────────────────────────────────────────────
+
 const AuthContext = createContext<AuthContextData>({} as AuthContextData);
 
-// Cria o componente Provedor
+// ─── PROVIDER ─────────────────────────────────────────────────────────────────
+
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
+  const [isLoadingAuth, setIsLoadingAuth] = useState(true);
 
-  // Função para fazer login
-  const login = async (userData: User, token: string) => {
+  // Restaura sessão ao iniciar o app
+  useEffect(() => {
+    const restoreSession = async () => {
+      try {
+        const storedToken = await AsyncStorage.getItem("@TerraManager:token");
+        const storedUser = await AsyncStorage.getItem("@TerraManager:user");
+
+        if (storedToken && storedUser) {
+          setToken(storedToken);
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (err) {
+        console.warn("Erro ao restaurar sessão:", err);
+      } finally {
+        setIsLoadingAuth(false);
+      }
+    };
+
+    restoreSession();
+  }, []);
+
+  // Salva sessão e navega para o app
+  const login = async (userData: User, accessToken: string) => {
     setUser(userData);
-    // Salva o token no armazenamento seguro para login persistente
-    await AsyncStorage.setItem("@TerraManager:token", token);
-    await AsyncStorage.setItem("@TerraManager:user", JSON.stringify(userData));
+    setToken(accessToken);
+    await AsyncStorage.setItem("@TerraManager:token", accessToken);
+    await AsyncStorage.setItem(
+      "@TerraManager:user",
+      JSON.stringify(userData)
+    );
   };
 
-  // Função para fazer logout
+  // Limpa sessão e dados offline
   const logout = async () => {
     await AsyncStorage.removeItem("@TerraManager:token");
     await AsyncStorage.removeItem("@TerraManager:user");
+    await clearAllOfflineData();
     setUser(null);
+    setToken(null);
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoadingAuth, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
 };
 
-// Hook customizado para facilitar o uso do contexto
+// ─── HOOK ─────────────────────────────────────────────────────────────────────
+
 export function useAuth(): AuthContextData {
-  const context = useContext(AuthContext);
-  return context;
+  return useContext(AuthContext);
 }

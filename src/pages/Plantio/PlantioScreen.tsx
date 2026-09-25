@@ -40,9 +40,7 @@ export default function PlantioScreen() {
     setIsLoadingFarms(true);
     setModalVisible(true);
     try {
-      const token = await AsyncStorage.getItem('@TerraManager:token');
-      if (!token) throw new Error("Token não encontrado.");
-      const response = await fetchFarms(token);
+      const response = await fetchFarms();
       setFarms(response.data || []);
     } catch (error: any) {
       Alert.alert("Erro", "Não foi possível carregar as fazendas.");

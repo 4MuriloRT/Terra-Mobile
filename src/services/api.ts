@@ -1,354 +1,364 @@
+// src/services/api.ts
+// Serviço centralizado de API usando axios com interceptors de autenticação automática
+
+import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { Farm, Cultivar } from "../screens/Types"; // Caminho corrigido
+import { API_BASE_URL } from "../config/api.config";
+import {
+  Farm,
+  Cultivar,
+  Talhao,
+  OperacaoPlantio,
+  Aplicacao,
+  ProdutoEstoque,
+  Fornecedor,
+  StatusPlantio,
+} from "../screens/Types";
 
-// URL base do seu servidor backend
-const API_BASE_URL = "http://192.168.3.40:3000"; // Use seu IP aqui
+// ─── INSTÂNCIA AXIOS ─────────────────────────────────────────────────────────
 
-// --- FUNÇÕES AUXILIARES ---
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+  headers: { "Content-Type": "application/json" },
+});
 
-const fetchAuthenticated = async (endpoint: string) => {
+// Interceptor: injeta o token automaticamente em cada requisição
+api.interceptors.request.use(async (config) => {
   const token = await AsyncStorage.getItem("@TerraManager:token");
-  if (!token) {
-    throw new Error("Token de autenticação não encontrado.");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
   }
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => response.text());
-    throw new Error(
-      errorBody.message ||
-        `O servidor respondeu com um erro (${response.status}).`
-    );
+  return config;
+});
+
+// Interceptor: extrai a mensagem de erro do backend de forma padronizada
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      "Erro de conexão com o servidor.";
+    return Promise.reject(new Error(Array.isArray(message) ? message.join(", ") : message));
   }
-  const responseText = await response.text();
-  return responseText ? JSON.parse(responseText) : null;
+);
+
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+
+export const authLogin = async (email: string, password: string) => {
+  const { data } = await api.post("/auth/login", { email, password });
+  return data; // { id, name, email, role, accessToken }
 };
 
-// --- FUNÇÕES DE FAZENDA ---
-
-export const fetchFarms = async (token: string) => {
-  const endpoint = "/fazenda/lista";
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  if (!response.ok) throw new Error("Não foi possível carregar as fazendas.");
-  return response.json();
+export const authRegister = async (registerData: {
+  nome: string;
+  email: string;
+  password: string;
+  cpf?: string;
+  telefone?: string;
+}) => {
+  const { data } = await api.post("/user", registerData);
+  return data;
 };
 
-export const createFarm = async (farmData: Omit<Farm, "id">, token: string) => {
-  const endpoint = "/fazenda";
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(farmData),
-  });
-  if (!response.ok) {
-    const errorBody = await response
-      .json()
-      .catch(() => ({ message: "Não foi possível cadastrar a fazenda." }));
-    throw new Error(errorBody.message);
-  }
-  return response.json();
+// ─── FAZENDA ─────────────────────────────────────────────────────────────────
+
+export const fetchFarms = async (): Promise<{ data: Farm[]; count: number }> => {
+  const { data } = await api.get("/fazenda/lista");
+  return data;
 };
 
-export const updateFarm = async (
-  id: string,
-  farmData: Partial<Farm>,
-  token: string
-) => {
-  const endpoint = `/fazenda/${id}`;
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(farmData),
-  });
-  if (!response.ok) {
-    const errorBody = await response
-      .json()
-      .catch(() => ({ message: "Não foi possível atualizar a fazenda." }));
-    throw new Error(errorBody.message);
-  }
-  return response.json();
+export const createFarm = async (farmData: Omit<Farm, "id" | "ativo">): Promise<Farm> => {
+  const { data } = await api.post("/fazenda", farmData);
+  return data;
 };
 
-export const deleteFarm = async (id: string, token: string) => {
-  const endpoint = `/fazenda/${id}`;
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) {
-    const errorBody = await response
-      .json()
-      .catch(() => ({ message: "Não foi possível deletar a fazenda." }));
-    throw new Error(errorBody.message);
-  }
-  return { message: "Fazenda deletada com sucesso." };
+export const updateFarm = async (id: string, farmData: Partial<Farm>): Promise<Farm> => {
+  const { data } = await api.put(`/fazenda/${id}`, farmData);
+  return data;
 };
 
-// --- FUNÇÕES DE CULTIVAR ---
+export const deleteFarm = async (id: string): Promise<void> => {
+  await api.delete(`/fazenda/${id}`);
+};
 
-export const fetchCultivares = async (token: string) => {
-  const endpoint = "/cultivar/lista";
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  if (!response.ok) throw new Error("Não foi possível carregar os cultivares.");
-  return response.json();
+// ─── TALHÃO ──────────────────────────────────────────────────────────────────
+
+export const fetchTalhoesByFazenda = async (
+  idFazenda: number
+): Promise<{ data: Talhao[]; count: number }> => {
+  const { data } = await api.get(`/talhao/fazenda/${idFazenda}`);
+  return data;
+};
+
+export const createTalhao = async (
+  talhaoData: Omit<Talhao, "id" | "ativo">
+): Promise<Talhao> => {
+  const { data } = await api.post("/talhao", talhaoData);
+  return data;
+};
+
+export const updateTalhao = async (
+  id: number,
+  talhaoData: Partial<Omit<Talhao, "id">>
+): Promise<Talhao> => {
+  const { data } = await api.put(`/talhao/${id}`, talhaoData);
+  return data;
+};
+
+export const deleteTalhao = async (id: number): Promise<void> => {
+  await api.delete(`/talhao/${id}`);
+};
+
+export const fetchResumoTalhoes = async (idFazenda: number) => {
+  const { data } = await api.get(`/talhao/fazenda/${idFazenda}/resumo`);
+  return data; // { areaTotalHa, totalTalhoes, talhoes }
+};
+
+// ─── CULTIVAR ─────────────────────────────────────────────────────────────────
+
+export const fetchCultivares = async (): Promise<{ data: Cultivar[]; count: number }> => {
+  const { data } = await api.get("/cultivar/lista");
+  return data;
 };
 
 export const createCultivar = async (
-  cultivarData: Omit<Cultivar, "id">,
-  token: string
-) => {
-  const endpoint = "/cultivar";
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(cultivarData),
-  });
-  if (!response.ok) {
-    const errorBody = await response
-      .json()
-      .catch(() => ({ message: "Não foi possível cadastrar o cultivar." }));
-    throw new Error(errorBody.message);
-  }
-  return response.json();
+  cultivarData: Omit<Cultivar, "id">
+): Promise<Cultivar> => {
+  const { data } = await api.post("/cultivar", cultivarData);
+  return data;
 };
 
 export const updateCultivar = async (
   id: string,
-  cultivarData: Partial<Omit<Cultivar, "id">>,
-  token: string
-) => {
-  const endpoint = `/cultivar/${id}`;
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(cultivarData),
-  });
-  if (!response.ok) {
-    const errorBody = await response
-      .json()
-      .catch(() => ({ message: "Não foi possível atualizar o cultivar." }));
-    throw new Error(errorBody.message);
-  }
-  return response.json();
+  cultivarData: Partial<Omit<Cultivar, "id">>
+): Promise<Cultivar> => {
+  const { data } = await api.put(`/cultivar/${id}`, cultivarData);
+  return data;
 };
 
-export const deleteCultivar = async (id: string, token: string) => {
-  const endpoint = `/cultivar/${id}`;
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) {
-    const errorBody = await response
-      .json()
-      .catch(() => ({ message: "Não foi possível deletar o cultivar." }));
-    throw new Error(errorBody.message);
-  }
-  return { message: "Cultivar deletado com sucesso." };
+export const deleteCultivar = async (id: string): Promise<void> => {
+  await api.delete(`/cultivar/${id}`);
 };
 
-// --- FUNÇÕES DE PLANTIO E OUTRAS ---
+// ─── PLANTIO ─────────────────────────────────────────────────────────────────
 
-export const createPlantio = async (plantioData: any, token: string) => {
-  const endpoint = "/plantio";
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(plantioData),
-  });
-  if (!response.ok) {
-    const errorBody = await response.json();
-    throw new Error(
-      errorBody.message || "Não foi possível cadastrar o plantio."
-    );
-  }
-  return response.json();
-};
-
-export const createAnaliseSolo = async (analiseData: any, token: string) => {
-  const endpoint = "/analise-solo"; // Verifique se esta é a rota correta no seu backend
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(analiseData),
-  });
-
-  if (!response.ok) {
-    const errorBody = await response
-      .json()
-      .catch(() => ({
-        message: "Erro desconhecido ao criar análise de solo.",
-      }));
-    throw new Error(
-      errorBody.message || "Não foi possível cadastrar a análise de solo."
-    );
-  }
-  return response.json();
-};
-
-export const getAnaliseSoloById = async (id: number, token: string) => {
-  const endpoint = `/analise-solo/${id}`;
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) throw new Error("Não foi possível buscar os dados da análise.");
-  return response.json();
-};
-
-export const updateAnaliseSolo = async (id: number, data: any, token: string) => {
-  const endpoint = `/analise-solo/${id}`;
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
-  });
-  if (!response.ok) throw new Error("Não foi possível atualizar a análise de solo.");
-  return response.json();
-};
-
-export const deleteAnaliseSolo = async (id: number, token: string) => {
-  const endpoint = `/analise-solo/${id}`;
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (response.status !== 204 && response.status !== 200) { // Status 204 é comum para delete
-    throw new Error("Não foi possível deletar a análise de solo.");
-  }
-  return response.ok;
-};
-
-export const getCalculoCalagem = async (idPlantio: number, token: string) => {
-  const endpoint = `/analise-solo/calagem/${idPlantio}`;
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) throw new Error("Não foi possível buscar o cálculo de calagem.");
-  return response.json();
-};
-
-export const getCalculoAdubacao = async (idPlantio: number, token: string) => {
-  const endpoint = `/analise-solo/adubacao/${idPlantio}`;
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) throw new Error("Não foi possível buscar o cálculo de adubação.");
-  return response.json();
-};
-
-export const getComparativoNutrientes = async (idPlantio: number, token: string) => {
-  const endpoint = `/analise-solo/comparativo-nutrientes/${idPlantio}`;
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  if (!response.ok) throw new Error("Não foi possível buscar o comparativo de nutrientes.");
-  return response.json();
+export const createPlantio = async (plantioData: any) => {
+  const { data } = await api.post("/plantio", plantioData);
+  return data;
 };
 
 export const fetchPlantiosByFazenda = async (
-  fazendaId: string,
-  tipoPlanta: string, // Adicionamos o tipoPlanta como parâmetro
-  token: string
+  fazendaId: number,
+  tipoPlanta: string
 ) => {
-  // ✅ Rota corrigida para corresponder ao Swagger
-  const endpoint = `/plantio/fazenda/${fazendaId}/tipo-planta/${tipoPlanta}`;
-
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("Não foi possível carregar os plantios para esta fazenda.");
-  }
-  return response.json();
+  const { data } = await api.get(
+    `/plantio/fazenda/${fazendaId}/tipo-planta/${tipoPlanta}`
+  );
+  return data; // { data: Plantio[], count }
 };
 
-export const updatePlantio = async (
+export const fetchPlantiosByFazendaFiltro = async (
+  fazendaId: number,
+  options?: Record<string, any>,
+  page = 1,
+  pageSize = 20
+) => {
+  const params: Record<string, any> = { page, pageSize };
+  if (options && Object.keys(options).length > 0) {
+    params.options = JSON.stringify(options);
+  }
+  const { data } = await api.get(`/plantio/fazenda/${fazendaId}`, { params });
+  return data; // { data: Plantio[], count }
+};
+
+export const updatePlantio = async (plantioId: number, plantioData: any) => {
+  const { data } = await api.put(`/plantio/${plantioId}`, plantioData);
+  return data;
+};
+
+export const updateStatusPlantio = async (
   plantioId: number,
-  data: any,
-  token: string
+  statusPlantio: StatusPlantio
 ) => {
-  const endpoint = `/plantio/${plantioId}`;
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "PUT",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify(data),
+  const { data } = await api.patch(`/plantio/${plantioId}/status`, {
+    statusPlantio,
   });
-
-  if (!response.ok) {
-    throw new Error("Não foi possível atualizar o plantio.");
-  }
-  return response.json();
+  return data;
 };
 
-export const deletePlantio = async (plantioId: number, token: string) => {
-  const endpoint = `/plantio/${plantioId}`;
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error("Não foi possível deletar o plantio.");
-  }
-  return response.json(); // Ou talvez response.status === 204
+export const deletePlantio = async (plantioId: number): Promise<void> => {
+  await api.delete(`/plantio/${plantioId}`);
 };
 
-// --- FUNÇÕES PARA O DASHBOARD ---
-export const fetchClima = () =>
-  fetchAuthenticated(`/dashboard/clima?city=ARINOS&state=MG&country=BR`);
-export const fetchCotacao = (symbol: string) =>
-  fetchAuthenticated(`/dashboard/cotacao-bolsa?symbol=${symbol}`);
-export const fetchNoticia = (query: string, size = 5) =>
-  fetchAuthenticated(`/dashboard/noticias?query=${query}&size=${size}`);
+export const fetchCustoPorSafra = async (idFazenda: number, ano: number) => {
+  const { data } = await api.get(`/plantio/fazenda/${idFazenda}/custo-safra`, {
+    params: { ano },
+  });
+  return data;
+};
+
+// ─── OPERAÇÃO DE PLANTIO ─────────────────────────────────────────────────────
+
+export const fetchOperacoesByPlantio = async (
+  idPlantio: number
+): Promise<OperacaoPlantio[]> => {
+  const { data } = await api.get(`/operacao-plantio/plantio/${idPlantio}`);
+  return data;
+};
+
+export const createOperacaoPlantio = async (
+  operacaoData: any
+): Promise<OperacaoPlantio> => {
+  const { data } = await api.post("/operacao-plantio", operacaoData);
+  return data;
+};
+
+export const updateOperacaoPlantio = async (
+  id: number,
+  operacaoData: any
+): Promise<OperacaoPlantio> => {
+  const { data } = await api.put(`/operacao-plantio/${id}`, operacaoData);
+  return data;
+};
+
+export const deleteOperacaoPlantio = async (id: number): Promise<void> => {
+  await api.delete(`/operacao-plantio/${id}`);
+};
+
+// ─── APLICAÇÃO ───────────────────────────────────────────────────────────────
+
+export const fetchAplicacoesByOperacao = async (
+  idOperacaoPlantio: number
+): Promise<Aplicacao[]> => {
+  const { data } = await api.get(
+    `/aplicacao-plantio/operacao/${idOperacaoPlantio}`
+  );
+  return data;
+};
+
+export const createAplicacao = async (aplicacaoData: any): Promise<Aplicacao> => {
+  const { data } = await api.post("/aplicacao-plantio", aplicacaoData);
+  return data;
+};
+
+export const deleteAplicacao = async (id: number): Promise<void> => {
+  await api.delete(`/aplicacao-plantio/${id}`);
+};
+
+// ─── PRODUTO DE ESTOQUE ───────────────────────────────────────────────────────
+
+export const fetchEstoqueByFazenda = async (
+  idFazenda: number
+): Promise<{ data: ProdutoEstoque[]; count: number }> => {
+  const { data } = await api.get(`/produto-estoque/fazenda/${idFazenda}`);
+  return data;
+};
+
+export const createProdutoEstoque = async (
+  produtoData: any
+): Promise<ProdutoEstoque> => {
+  const { data } = await api.post("/produto-estoque", produtoData);
+  return data;
+};
+
+export const updateProdutoEstoque = async (
+  id: number,
+  produtoData: any
+): Promise<ProdutoEstoque> => {
+  const { data } = await api.put(`/produto-estoque/${id}`, produtoData);
+  return data;
+};
+
+export const deleteProdutoEstoque = async (id: number): Promise<void> => {
+  await api.delete(`/produto-estoque/${id}`);
+};
+
+// ─── FORNECEDOR ───────────────────────────────────────────────────────────────
+
+export const fetchFornecedores = async (): Promise<{
+  data: Fornecedor[];
+  count: number;
+}> => {
+  const { data } = await api.get("/fornecedor/lista");
+  return data;
+};
+
+export const createFornecedor = async (
+  fornecedorData: any
+): Promise<Fornecedor> => {
+  const { data } = await api.post("/fornecedor", fornecedorData);
+  return data;
+};
+
+export const updateFornecedor = async (
+  id: number,
+  fornecedorData: any
+): Promise<Fornecedor> => {
+  const { data } = await api.put(`/fornecedor/${id}`, fornecedorData);
+  return data;
+};
+
+export const deleteFornecedor = async (id: number): Promise<void> => {
+  await api.delete(`/fornecedor/${id}`);
+};
+
+// ─── ANÁLISE DE SOLO ─────────────────────────────────────────────────────────
+
+export const createAnaliseSolo = async (analiseData: any) => {
+  const { data } = await api.post("/analise-solo", analiseData);
+  return data;
+};
+
+export const getAnaliseSoloById = async (id: number) => {
+  const { data } = await api.get(`/analise-solo/${id}`);
+  return data;
+};
+
+export const updateAnaliseSolo = async (id: number, analiseData: any) => {
+  const { data } = await api.put(`/analise-solo/${id}`, analiseData);
+  return data;
+};
+
+export const deleteAnaliseSolo = async (id: number): Promise<void> => {
+  await api.delete(`/analise-solo/${id}`);
+};
+
+export const getCalculoCalagem = async (idPlantio: number) => {
+  const { data } = await api.get(`/analise-solo/calagem/${idPlantio}`);
+  return data;
+};
+
+export const getCalculoAdubacao = async (idPlantio: number) => {
+  const { data } = await api.get(`/analise-solo/adubacao/${idPlantio}`);
+  return data;
+};
+
+export const getComparativoNutrientes = async (idPlantio: number) => {
+  const { data } = await api.get(
+    `/analise-solo/comparativo-nutrientes/${idPlantio}`
+  );
+  return data;
+};
+
+// ─── DASHBOARD ───────────────────────────────────────────────────────────────
+
+export const fetchClima = async (city = "ARINOS", state = "MG", country = "BR") => {
+  const { data } = await api.get(
+    `/dashboard/clima?city=${city}&state=${state}&country=${country}`
+  );
+  return data;
+};
+
+export const fetchCotacao = async (symbol: string) => {
+  const { data } = await api.get(`/dashboard/cotacao-bolsa?symbol=${symbol}`);
+  return data;
+};
+
+export const fetchNoticia = async (query: string, size = 5) => {
+  const { data } = await api.get(
+    `/dashboard/noticias?query=${query}&size=${size}`
+  );
+  return data;
+};

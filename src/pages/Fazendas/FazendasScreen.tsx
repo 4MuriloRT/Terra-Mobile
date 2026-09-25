@@ -1,4 +1,5 @@
-import React, { useState, useCallback } from "react";
+// src/pages/Fazendas/FazendasScreen.tsx
+import React, { useState, useCallback, useEffect } from "react";
 import {
   View,
   Text,
@@ -13,61 +14,55 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { RootStackParamList, Farm } from "../../screens/Types";
 import { colors } from "../../components/Colors";
+import { fetchFarms } from "../../services/api";
+import { localFarms } from "../../services/offlineStorage";
+import { useNetworkStatus } from "../../hooks/useNetworkStatus";
 
-type FazendasScreenNavigationProp = StackNavigationProp<
-  RootStackParamList,
-  "FazendasScreen"
->;
-
-const API_BASE_URL = "http://192.168.3.40:3000";
+type NavigationProp = StackNavigationProp<RootStackParamList, "FazendasScreen">;
 
 export default function FazendasScreen() {
-  const navigation = useNavigation<FazendasScreenNavigationProp>();
+  const navigation = useNavigation<NavigationProp>();
+  const { isOnline } = useNetworkStatus();
   const [fazendas, setFazendas] = useState<Farm[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFromCache, setIsFromCache] = useState(false);
 
-  // Função para buscar as fazendas do backend
-  const fetchFazendas = async () => {
+  const loadFazendas = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
-      const token = await AsyncStorage.getItem("@TerraManager:token");
-      if (!token)
-        throw new Error("Token não encontrado. Faça login novamente.");
-
-      // ✅ URL CORRIGIDA para corresponder ao seu backend
-      const response = await fetch(`${API_BASE_URL}/fazenda/lista`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      if (!response.ok) {
-        const errorData = await response
-          .json()
-          .catch(() => ({
-            message: "Não foi possível carregar os dados das fazendas.",
-          }));
-        throw new Error(errorData.message);
+      if (isOnline) {
+        const result = await fetchFarms();
+        setFazendas(result.data);
+        // Salva no cache local
+        await localFarms.save(result.data);
+        setIsFromCache(false);
+      } else {
+        // Modo offline: usa cache
+        const cached = await localFarms.getAll();
+        setFazendas(cached);
+        setIsFromCache(true);
       }
-
-      // ✅ RESPOSTA DA API TRATADA CORRETAMENTE
-      // O backend retorna um objeto { data: [...] }, então pegamos o array 'data'
-      const result = await response.json();
-      setFazendas(result.data);
     } catch (error: any) {
-      Alert.alert("Erro", error.message);
+      // Se API falhar, tenta cache
+      try {
+        const cached = await localFarms.getAll();
+        setFazendas(cached);
+        setIsFromCache(true);
+      } catch {
+        Alert.alert("Erro", error?.message || "Não foi possível carregar as fazendas.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Recarrega os dados sempre que a tela entra em foco
   useFocusEffect(
     useCallback(() => {
-      fetchFazendas();
-    }, [])
+      loadFazendas();
+    }, [isOnline])
   );
 
   const renderItem = ({ item }: { item: Farm }) => (
@@ -75,16 +70,21 @@ export default function FazendasScreen() {
       style={styles.tableRow}
       onPress={() => navigation.navigate("AddFarmScreen", { farm: item })}
     >
-      <Text style={[styles.cellText, { flex: 1 }]}>{item.nome}</Text>
-      <Text style={[styles.cellText, { flex: 1, textAlign: "right" }]}>
-        {item.municipio} - {item.uf}
-      </Text>
-      <View style={styles.iconContainer}>
-        <Ionicons
-          name="chevron-forward-outline"
-          size={22}
-          color={colors.white}
-        />
+      <View style={styles.farmInfo}>
+        <Text style={styles.farmName}>{item.nome}</Text>
+        <Text style={styles.farmLocation}>
+          {item.municipio} - {item.uf}
+        </Text>
+      </View>
+      <View style={styles.actions}>
+        <TouchableOpacity
+          style={styles.talhaoButton}
+          onPress={() => navigation.navigate("TalhoesScreen", { fazenda: item })}
+        >
+          <Ionicons name="map-outline" size={18} color={colors.accent} />
+          <Text style={styles.talhaoText}>Talhões</Text>
+        </TouchableOpacity>
+        <Ionicons name="chevron-forward-outline" size={22} color={colors.white} />
       </View>
     </TouchableOpacity>
   );
@@ -110,6 +110,13 @@ export default function FazendasScreen() {
           <Ionicons name="add" size={24} color={colors.white} />
         </TouchableOpacity>
       </View>
+
+      {isFromCache && (
+        <View style={styles.cacheWarning}>
+          <Ionicons name="cloud-offline-outline" size={14} color="#FCD34D" />
+          <Text style={styles.cacheWarningText}>Exibindo dados locais (offline)</Text>
+        </View>
+      )}
 
       <View style={styles.content}>
         <View style={styles.tableHeader}>
@@ -160,6 +167,18 @@ const styles = StyleSheet.create({
   addButton: {
     padding: 8,
   },
+  cacheWarning: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(180,83,9,0.3)",
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    gap: 6,
+  },
+  cacheWarningText: {
+    color: "#FCD34D",
+    fontSize: 12,
+  },
   content: {
     flex: 1,
     paddingHorizontal: 15,
@@ -185,23 +204,47 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "rgba(255, 255, 255, 0.05)",
     borderRadius: 8,
-    paddingVertical: 20,
-    paddingHorizontal: 10,
+    paddingVertical: 16,
+    paddingHorizontal: 14,
     marginBottom: 10,
   },
-  cellText: {
-    color: colors.white,
-    fontSize: 16,
+  farmInfo: {
     flex: 1,
   },
-  iconContainer: {
-    marginLeft: 10,
+  farmName: {
+    color: colors.white,
+    fontSize: 16,
+    fontWeight: "600",
+  },
+  farmLocation: {
+    color: "rgba(255,255,255,0.6)",
+    fontSize: 13,
+    marginTop: 2,
+  },
+  actions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+  },
+  talhaoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: "rgba(255,255,255,0.1)",
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  talhaoText: {
+    color: colors.accent,
+    fontSize: 12,
+    fontWeight: "600",
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    marginTop: -50,
+    marginTop: 60,
   },
   emptyText: {
     color: "white",

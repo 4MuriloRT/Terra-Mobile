@@ -1,17 +1,15 @@
+// src/pages/SignIn/index.tsx
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator } from "react-native";
 import * as Animatable from "react-native-animatable";
 import Styles from "../../components/Styles";
 import { useNavigation } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { RootStackParamList } from "../../screens/Types";
 import { useAuth } from "../../contexts/AuthContext";
+import { authLogin } from "../../services/api";
 
 type NavigationProp = StackNavigationProp<RootStackParamList>;
-//const API_BASE_URL = "http://192.168.3.40:3000"; <--- Murilo
-//const API_BASE_URL = 'http://192.168.3.50:3000'; <--- João Pedro
-
-const API_BASE_URL = "http://192.168.3.40:3000";
 
 export default function SignIn() {
   const navigation = useNavigation<NavigationProp>();
@@ -19,51 +17,37 @@ export default function SignIn() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Substitua sua função handleLogin por esta
   const handleLogin = async () => {
     if (!email || !password) {
       Alert.alert("Erro", "Por favor, preencha o email e a senha.");
       return;
     }
 
+    setIsLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: email,
-          password: password,
-        }),
-      });
+      const data = await authLogin(email, password);
 
-      const data = await response.json();
+      const user = {
+        id: String(data.id),
+        nome: data.name || data.nome || email,
+        email: data.email,
+        role: data.role,
+      };
 
-      if (response.ok) {
-        const user = {
-          id: data.id,
-          nome: data.name,
-          email: data.email,
-          role: data.role,
-        };
-
-        await login(user, data.accessToken);
-
-        navigation.navigate("DashboardScreen");
-      } else {
-        Alert.alert("Erro de Login", data.message || "Credenciais inválidas.");
-      }
-    } catch (error) {
-      console.error("Erro de rede:", error);
+      await login(user, data.accessToken);
+      navigation.navigate("DashboardScreen");
+    } catch (error: any) {
       Alert.alert(
-        "Erro de Conexão",
-        "Não foi possível se conectar ao servidor."
+        "Erro de Login",
+        error?.message || "Não foi possível conectar ao servidor."
       );
+    } finally {
+      setIsLoading(false);
     }
   };
-  // A parte visual (return) deve estar aqui, dentro da função SignIn
+
   return (
     <View style={Styles.container}>
       <Animatable.View animation="fadeInLeft" delay={600} style={Styles.Header}>
@@ -79,6 +63,7 @@ export default function SignIn() {
           onChangeText={setEmail}
           keyboardType="email-address"
           autoCapitalize="none"
+          editable={!isLoading}
         />
         <Text style={Styles.email}>Senha</Text>
         <TextInput
@@ -87,9 +72,18 @@ export default function SignIn() {
           style={Styles.input}
           value={password}
           onChangeText={setPassword}
+          editable={!isLoading}
         />
-        <TouchableOpacity style={Styles.buttonLogin} onPress={handleLogin}>
-          <Text style={Styles.textButton}>Acessar</Text>
+        <TouchableOpacity
+          style={[Styles.buttonLogin, isLoading && { opacity: 0.7 }]}
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
+          {isLoading ? (
+            <ActivityIndicator color="#fff" size="small" />
+          ) : (
+            <Text style={Styles.textButton}>Acessar</Text>
+          )}
         </TouchableOpacity>
 
         <View style={Styles.lineRegister}>

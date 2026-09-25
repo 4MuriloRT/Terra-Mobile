@@ -42,7 +42,7 @@ export default function SelectCultivarScreen() {
       try {
         const token = await AsyncStorage.getItem("@TerraManager:token");
         if (!token) throw new Error("Token não encontrado.");
-        const response = await fetchCultivares(token);
+        const response = await fetchCultivares();
         // Filtra os cultivares pelo tipo de cultura selecionado
         const filteredData = response.data.filter(
           (c: Cultivar) => c.tipoPlanta === cultureType

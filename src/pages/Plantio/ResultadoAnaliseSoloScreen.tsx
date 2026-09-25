@@ -111,9 +111,9 @@ export default function ResultadoAnaliseSoloScreen() {
 
         // Busca todos os dados em paralelo
         const [calagemRes, adubacaoRes, comparativoRes] = await Promise.all([
-          getCalculoCalagem(plantioId, token),
-          getCalculoAdubacao(plantioId, token),
-          getComparativoNutrientes(plantioId, token),
+          getCalculoCalagem(plantioId),
+          getCalculoAdubacao(plantioId),
+          getComparativoNutrientes(plantioId),
         ]);
 
         setCalagem(calagemRes.data || calagemRes);

@@ -14,7 +14,6 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { RootStackParamList, Cultivar } from "../../screens/Types";
 import { colors } from "../../components/Colors";
@@ -33,10 +32,7 @@ export default function CultivosScreen() {
 
   const loadCultivares = async () => {
     try {
-      const token = await AsyncStorage.getItem("@TerraManager:token");
-      if (!token) throw new Error("Token não encontrado.");
-
-      const response = await fetchCultivares(token);
+      const response = await fetchCultivares();
       setCultivares(response.data || []);
     } catch (error: any) {
       Alert.alert(
@@ -71,10 +67,7 @@ export default function CultivosScreen() {
           style: "destructive",
           onPress: async () => {
             try {
-              const token = await AsyncStorage.getItem("@TerraManager:token");
-              if (!token) throw new Error("Token não encontrado.");
-
-              await deleteCultivar(cultivar.id, token);
+              await deleteCultivar(cultivar.id);
               Alert.alert("Sucesso!", "Cultivar excluído com sucesso.");
               loadCultivares();
             } catch (error: any) {

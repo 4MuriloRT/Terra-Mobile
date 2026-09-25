@@ -192,7 +192,7 @@ export default function AddPlantioScreen() {
       try {
         const token = await AsyncStorage.getItem("@TerraManager:token");
         if (!token) throw new Error("Token não encontrado.");
-        const response = await getAnaliseSoloById(dadosAnaliseSolo.id, token);
+        const response = await getAnaliseSoloById(dadosAnaliseSolo.id);
         dataParaModal = response.data || response;
       } catch (error) {
         Alert.alert(
@@ -216,10 +216,10 @@ export default function AddPlantioScreen() {
 
       let analiseSalva;
       if (data.id) {
-        const response = await updateAnaliseSolo(data.id, data, token);
+        const response = await updateAnaliseSolo(data.id, data);
         analiseSalva = response.data || response;
       } else {
-        const response = await createAnaliseSolo(data, token);
+        const response = await createAnaliseSolo(data);
         analiseSalva = response.data || response;
       }
 
@@ -255,7 +255,7 @@ export default function AddPlantioScreen() {
       const token = await AsyncStorage.getItem("@TerraManager:token");
       if (!token) throw new Error("Token não encontrado.");
 
-      await deleteAnaliseSolo(id, token);
+      await deleteAnaliseSolo(id);
       setDadosAnaliseSolo(null);
       setAnaliseParaEditar(null);
       setAnaliseModalVisible(false);
@@ -329,10 +329,10 @@ export default function AddPlantioScreen() {
       };
 
       if (isEditing) {
-        await updatePlantio(plantio.id, payload, token);
+        await updatePlantio(plantio.id, payload);
         Alert.alert("Sucesso!", "Plantio atualizado!");
       } else {
-        await createPlantio(payload, token);
+        await createPlantio(payload);
         Alert.alert("Sucesso!", "Novo plantio cadastrado!");
       }
       navigation.navigate("ListPlantioScreen", { farmId, cultureType });
@@ -362,7 +362,7 @@ export default function AddPlantioScreen() {
             try {
               const token = await AsyncStorage.getItem("@TerraManager:token");
               if (!token) throw new Error("Sessão expirada.");
-              await deletePlantioApi(plantio.id, token);
+              await deletePlantioApi(plantio.id);
               Alert.alert("Sucesso!", "Plantio deletado.");
               navigation.navigate("ListPlantioScreen", { farmId, cultureType });
             } catch (error: any) {

@@ -1,4 +1,4 @@
-// Em: src/pages/Plantio/ListPlantioScreen.tsx
+// src/pages/Plantio/ListPlantioScreen.tsx
 
 import React, { useState, useCallback } from "react";
 import {
@@ -20,11 +20,12 @@ import {
   RouteProp,
 } from "@react-navigation/native";
 import { StackNavigationProp } from "@react-navigation/stack";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { RootStackParamList, Plantio } from "../../screens/Types";
 import { colors } from "../../components/Colors";
 import { fetchPlantiosByFazenda } from "../../services/api";
+import { localPlantios } from "../../services/offlineStorage";
+import { useNetworkStatus } from "../../hooks/useNetworkStatus";
 
 // Tipagem para navegação e rotas
 type NavigationProp = StackNavigationProp<
@@ -37,42 +38,47 @@ export default function ListPlantioScreen() {
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<ListPlantioRouteProp>();
   const { farmId, cultureType } = route.params;
+  const { isOnline } = useNetworkStatus();
 
   const [plantios, setPlantios] = useState<Plantio[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isFromCache, setIsFromCache] = useState(false);
 
-  // Função para carregar os plantios da API
   const loadPlantios = useCallback(async () => {
     if (!farmId || !cultureType) return;
-
     setIsLoading(true);
     try {
-      const token = await AsyncStorage.getItem("@TerraManager:token");
-      if (!token) {
-        throw new Error("Token de autenticação não encontrado.");
+      if (isOnline) {
+        const response = await fetchPlantiosByFazenda(Number(farmId), cultureType);
+        const list = response.data || [];
+        setPlantios(list);
+        await localPlantios.upsertMany(list);
+        setIsFromCache(false);
+      } else {
+        const cached = await localPlantios.getByFazenda(Number(farmId));
+        const filtered = cached.filter(
+          (p) => p.cultivar?.tipoPlanta === cultureType || !cultureType
+        );
+        setPlantios(filtered);
+        setIsFromCache(true);
       }
-
-      const response = await fetchPlantiosByFazenda(farmId, cultureType, token);
-      setPlantios(response.data || []);
-    } catch (error: any) {
-      Alert.alert("Erro ao Carregar", "Não foi possível buscar os plantios.");
-      setPlantios([]);
+    } catch {
+      const cached = await localPlantios.getByFazenda(Number(farmId));
+      setPlantios(cached);
+      setIsFromCache(true);
     } finally {
       setIsLoading(false);
     }
-  }, [farmId, cultureType]);
+  }, [farmId, cultureType, isOnline]);
 
-  // Recarrega os dados sempre que a tela for focada
   useFocusEffect(
     useCallback(() => {
       loadPlantios();
     }, [loadPlantios])
   );
 
-  // Componente para renderizar cada item da lista (card)
   const renderItem = ({ item }: { item: Plantio }) => (
     <View style={styles.card}>
-      {/* Área principal do card, clicável para edição */}
       <TouchableOpacity
         style={styles.cardInfoContainer}
         onPress={() =>
@@ -94,11 +100,21 @@ export default function ListPlantioScreen() {
             Data: {new Date(item.dataPlantio).toLocaleDateString()}
           </Text>
           <Text style={styles.cardData}>Área: {item.areaPlantada} ha</Text>
+          <View style={[styles.statusBadge, getStatusStyle(item.statusPlantio)]}>
+            <Text style={styles.statusText}>{item.statusPlantio}</Text>
+          </View>
         </View>
       </TouchableOpacity>
 
-      {/* Botão de Análise de Solo (Globo), condicional */}
       <View style={styles.cardActions}>
+        {/* Botão Operações */}
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={() => navigation.navigate("OperacoesScreen", { plantio: item })}
+        >
+          <Ionicons name="clipboard-outline" size={24} color={colors.secondary} />
+        </TouchableOpacity>
+        {/* Botão Análise de Solo */}
         {item.idAnaliseSolo && (
           <TouchableOpacity
             style={styles.actionButton}
@@ -108,20 +124,26 @@ export default function ListPlantioScreen() {
               })
             }
           >
-            <Ionicons name="globe-outline" size={28} color={colors.blue} />
+            <Ionicons name="globe-outline" size={24} color={colors.blue} />
           </TouchableOpacity>
         )}
       </View>
     </View>
   );
 
+  function getStatusStyle(status: string) {
+    switch (status) {
+      case "CONCLUIDO": return { backgroundColor: "#22c55e" };
+      case "EM_MONITORAMENTO": return { backgroundColor: "#3b82f6" };
+      case "EXECUTADO": return { backgroundColor: "#f59e0b" };
+      default: return { backgroundColor: "#6b7280" };
+    }
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color={colors.white} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Plantios de {cultureType}</Text>
@@ -134,6 +156,13 @@ export default function ListPlantioScreen() {
           <Ionicons name="add" size={28} color={colors.white} />
         </TouchableOpacity>
       </View>
+
+      {isFromCache && (
+        <View style={styles.cacheWarning}>
+          <Ionicons name="cloud-offline-outline" size={14} color="#FCD34D" />
+          <Text style={styles.cacheText}>Dados locais (offline)</Text>
+        </View>
+      )}
 
       <View style={styles.content}>
         {isLoading ? (
@@ -173,6 +202,23 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#1E322D",
   },
+  cacheWarning: {
+    flexDirection: "row",
+    gap: 6,
+    alignItems: "center",
+    backgroundColor: "rgba(180,83,9,0.3)",
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+  },
+  cacheText: { color: "#FCD34D", fontSize: 12 },
+  statusBadge: {
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    marginTop: 4,
+    alignSelf: "flex-start",
+  },
+  statusText: { color: "#fff", fontSize: 10, fontWeight: "700" },
   header: {
     flexDirection: "row",
     alignItems: "center",
