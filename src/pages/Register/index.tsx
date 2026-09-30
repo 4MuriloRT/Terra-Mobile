@@ -1,17 +1,7 @@
-// src/pages/Register/index.tsx
 import React, { useState } from "react";
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Alert,
-  ActivityIndicator,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  ScrollView,
-  StatusBar,
+  View, Text, TextInput, TouchableOpacity, Alert, ActivityIndicator,
+  StyleSheet, KeyboardAvoidingView, Platform, ScrollView, StatusBar,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import * as Animatable from "react-native-animatable";
@@ -21,6 +11,18 @@ import { RootStackParamList } from "../../screens/Types";
 import { authRegister } from "../../services/api";
 
 type NavigationProp = StackNavigationProp<RootStackParamList, "Register">;
+
+// Extrai mensagem legível do erro Axios
+function parseError(err: any): string {
+  const data = err?.response?.data;
+  const status = err?.response?.status;
+  if (typeof data === "string") return data;
+  if (typeof data?.message === "string") return data.message;
+  if (Array.isArray(data?.message)) return data.message.join("\n");
+  if (status === 409) return "Este email ou CPF já está cadastrado.";
+  if (typeof err?.message === "string") return err.message;
+  return "Ocorreu um erro inesperado. Tente novamente.";
+}
 
 // ─── PLANOS ───────────────────────────────────────────────────────────────────
 const PLANOS = [
@@ -61,17 +63,24 @@ export default function Register() {
   const navigation = useNavigation<NavigationProp>();
 
   // Campos
-  const [nome, setNome] = useState("");
-  const [email, setEmail] = useState("");
-  const [cpf, setCpf] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [password, setPassword] = useState("");
+  const [nome, setNome]                   = useState("");
+  const [email, setEmail]                 = useState("");
+  const [cpf, setCpf]                     = useState("");
+  const [telefone, setTelefone]           = useState("");
+  const [password, setPassword]           = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [role, setRole] = useState("USER");
-  const [plano, setPlano] = useState("FREE");
-  const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword]   = useState(false);
+  const [showConfirm, setShowConfirm]     = useState(false);
+  const [role, setRole]                   = useState("USER");
+  const [plano, setPlano]                 = useState("FREE");
+  const [isLoading, setIsLoading]         = useState(false);
+
+  // Erros inline por campo
+  const [nomeError, setNomeError]   = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passError, setPassError]   = useState("");
+  const [confirmError, setConfirmError] = useState("");
+  const [globalError, setGlobalError]   = useState("");
 
   // Máscaras simples
   const maskCpf = (v: string) => {
@@ -92,18 +101,24 @@ export default function Register() {
   };
 
   const handleRegister = async () => {
-    if (!nome.trim() || !email.trim() || !password || !confirmPassword) {
-      Alert.alert("Campos obrigatórios", "Preencha nome, email e senha.");
-      return;
-    }
-    if (password !== confirmPassword) {
-      Alert.alert("Senhas diferentes", "As senhas não coincidem.");
-      return;
-    }
-    if (password.length < 6) {
-      Alert.alert("Senha fraca", "A senha deve ter pelo menos 6 caracteres.");
-      return;
-    }
+    // Limpa erros
+    setNomeError(""); setEmailError(""); setPassError(""); setConfirmError(""); setGlobalError("");
+
+    // Validação
+    let ok = true;
+    if (!nome.trim()) { setNomeError("Informe seu nome completo."); ok = false; }
+    else if (nome.trim().split(" ").length < 2) { setNomeError("Informe nome e sobrenome."); ok = false; }
+
+    if (!email.trim()) { setEmailError("Informe seu email."); ok = false; }
+    else if (!/\S+@\S+\.\S+/.test(email)) { setEmailError("Email inválido."); ok = false; }
+
+    if (!password) { setPassError("Informe uma senha."); ok = false; }
+    else if (password.length < 6) { setPassError("A senha deve ter pelo menos 6 caracteres."); ok = false; }
+
+    if (!confirmPassword) { setConfirmError("Confirme sua senha."); ok = false; }
+    else if (password !== confirmPassword) { setConfirmError("As senhas não coincidem."); ok = false; }
+
+    if (!ok) return;
 
     setIsLoading(true);
     try {
@@ -122,11 +137,20 @@ export default function Register() {
         `Bem-vindo(a) ao Terra Manager!\nPlano ${plano} ativado. Faça login para continuar.`,
         [{ text: "Fazer Login", onPress: () => navigation.navigate("SignIn") }]
       );
-    } catch (error: any) {
-      Alert.alert(
-        "Erro no Cadastro",
-        error?.message || "Não foi possível criar a conta."
-      );
+    } catch (err: any) {
+      const msg = parseError(err);
+      const status = err?.response?.status;
+
+      // Mapeamento de erros específicos para campos
+      if (status === 409 || msg.toLowerCase().includes("email")) {
+        setEmailError("Este email já está cadastrado.");
+      } else if (msg.toLowerCase().includes("cpf")) {
+        setGlobalError("Este CPF já está cadastrado.");
+      } else if (msg.toLowerCase().includes("plano") || msg.toLowerCase().includes("plan")) {
+        setGlobalError("Erro ao vincular plano. Tente o plano FREE.");
+      } else {
+        setGlobalError(msg);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -168,16 +192,18 @@ export default function Register() {
             icon="person-outline"
             placeholder="Seu nome completo"
             value={nome}
-            onChangeText={setNome}
+            onChangeText={(v) => { setNome(v); setNomeError(""); }}
+            error={nomeError}
           />
           <InputField
             label="Email *"
             icon="mail-outline"
             placeholder="seu@email.com"
             value={email}
-            onChangeText={setEmail}
+            onChangeText={(v) => { setEmail(v); setEmailError(""); }}
             keyboardType="email-address"
             autoCapitalize="none"
+            error={emailError}
           />
           <InputField
             label="CPF"
@@ -201,40 +227,55 @@ export default function Register() {
             <Ionicons name="lock-closed-outline" size={16} color="#4b7940" /> Segurança
           </Text>
 
+          {globalError ? (
+            <View style={styles.globalErrorBox}>
+              <Ionicons name="warning-outline" size={18} color="#b91c1c" />
+              <Text style={styles.globalErrorText}>{globalError}</Text>
+            </View>
+          ) : null}
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Senha *</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed-outline" size={18} color="#4b7940" style={styles.inputIcon} />
+            <View style={[styles.inputWrapper, passError ? styles.inputError : null]}>
+              <Ionicons name="lock-closed-outline" size={18} color={passError ? "#ef4444" : "#4b7940"} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
                 placeholder="Mínimo 6 caracteres"
                 placeholderTextColor="#aaa"
                 secureTextEntry={!showPassword}
                 value={password}
-                onChangeText={setPassword}
+                onChangeText={(v) => { setPassword(v); setPassError(""); }}
               />
               <TouchableOpacity onPress={() => setShowPassword(!showPassword)} style={styles.eyeBtn}>
                 <Ionicons name={showPassword ? "eye-off-outline" : "eye-outline"} size={18} color="#888" />
               </TouchableOpacity>
             </View>
+            {passError ? <Text style={styles.errorText}><Ionicons name="alert-circle-outline" size={12} /> {passError}</Text> : null}
           </View>
 
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Confirmar Senha *</Text>
-            <View style={styles.inputWrapper}>
-              <Ionicons name="shield-checkmark-outline" size={18} color="#4b7940" style={styles.inputIcon} />
+            <View style={[styles.inputWrapper, confirmError ? styles.inputError : null]}>
+              <Ionicons name="shield-checkmark-outline" size={18} color={confirmError ? "#ef4444" : "#4b7940"} style={styles.inputIcon} />
               <TextInput
                 style={[styles.input, { flex: 1 }]}
                 placeholder="Repita sua senha"
                 placeholderTextColor="#aaa"
                 secureTextEntry={!showConfirm}
                 value={confirmPassword}
-                onChangeText={setConfirmPassword}
+                onChangeText={(v) => { setConfirmPassword(v); setConfirmError(""); }}
               />
               <TouchableOpacity onPress={() => setShowConfirm(!showConfirm)} style={styles.eyeBtn}>
                 <Ionicons name={showConfirm ? "eye-off-outline" : "eye-outline"} size={18} color="#888" />
               </TouchableOpacity>
             </View>
+            {confirmError ? <Text style={styles.errorText}><Ionicons name="alert-circle-outline" size={12} /> {confirmError}</Text> : null}
+            {confirmPassword.length > 0 && !confirmError && (
+              <Text style={{ fontSize: 12, marginTop: 5, fontWeight: "500", color: password === confirmPassword ? "#22c55e" : "#ef4444" }}>
+                <Ionicons name={password === confirmPassword ? "checkmark-circle" : "close-circle"} size={13} />
+                {" "}{password === confirmPassword ? "Senhas coincidem" : "Senhas não coincidem"}
+              </Text>
+            )}
           </View>
 
           {/* Perfil / Role */}
@@ -344,6 +385,7 @@ function InputField({
   onChangeText,
   keyboardType,
   autoCapitalize,
+  error,
 }: {
   label: string;
   icon: any;
@@ -352,12 +394,13 @@ function InputField({
   onChangeText: (v: string) => void;
   keyboardType?: any;
   autoCapitalize?: any;
+  error?: string;
 }) {
   return (
     <View style={styles.inputGroup}>
       <Text style={styles.label}>{label}</Text>
-      <View style={styles.inputWrapper}>
-        <Ionicons name={icon} size={18} color="#4b7940" style={styles.inputIcon} />
+      <View style={[styles.inputWrapper, error ? styles.inputError : null]}>
+        <Ionicons name={icon} size={18} color={error ? "#ef4444" : "#4b7940"} style={styles.inputIcon} />
         <TextInput
           style={styles.input}
           placeholder={placeholder}
@@ -369,6 +412,7 @@ function InputField({
           autoCorrect={false}
         />
       </View>
+      {error ? <Text style={styles.errorText}><Ionicons name="alert-circle-outline" size={12} /> {error}</Text> : null}
     </View>
   );
 }
@@ -556,4 +600,15 @@ const styles = StyleSheet.create({
   },
   loginText: { color: "#777", fontSize: 14 },
   loginLink: { color: "#4b7940", fontWeight: "700", fontSize: 14 },
+
+  // Erros
+  inputError: { borderColor: "#ef4444", backgroundColor: "#fff5f5" },
+  errorText: { fontSize: 12, color: "#ef4444", marginTop: 5, fontWeight: "500" },
+  globalErrorBox: {
+    flexDirection: "row", alignItems: "flex-start", gap: 8,
+    backgroundColor: "#fef2f2", borderRadius: 10, padding: 12,
+    borderLeftWidth: 3, borderLeftColor: "#ef4444", marginBottom: 16,
+  },
+  globalErrorText: { flex: 1, fontSize: 13, color: "#b91c1c", lineHeight: 18 },
 });
+

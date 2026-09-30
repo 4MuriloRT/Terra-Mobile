@@ -1,6 +1,6 @@
 // App.tsx
 import React, { useEffect, useRef } from "react";
-import { StatusBar, View, StyleSheet, AppState } from "react-native";
+import { StatusBar, View, StyleSheet, AppState, LogBox } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import NetInfo from "@react-native-community/netinfo";
@@ -10,6 +10,13 @@ import { colors } from "./src/components/Colors";
 import { AuthProvider } from "./src/contexts/AuthContext";
 import OfflineBanner from "./src/components/OfflineBanner";
 import { runFullSync } from "./src/services/syncService";
+
+// Suprime warnings de bibliotecas de terceiros que ainda não foram atualizadas
+// para o React Native 0.86. O @react-navigation/stack usa InteractionManager
+// internamente — não é algo que possamos corrigir no nosso código.
+LogBox.ignoreLogs([
+  "InteractionManager has been deprecated",
+]);
 
 export default function App() {
   const wasOffline = useRef(false);

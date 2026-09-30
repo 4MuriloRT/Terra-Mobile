@@ -69,20 +69,20 @@ export const authForgotPassword = async (email: string) => {
   return data;
 };
 
-export const authVerifyResetToken = async (email: string, token: string) => {
-  const { data } = await api.post("/auth/verify-reset-password-token", { email, token });
+export const authVerifyResetToken = async (token: string) => {
+  const { data } = await api.post("/auth/verify-reset-password-token", { token });
   return data;
 };
 
 export const authResetPassword = async (
-  email: string,
   token: string,
-  newPassword: string
+  newPassword: string,
+  confirmPassword: string
 ) => {
   const { data } = await api.post("/auth/reset-password", {
-    email,
     token,
     newPassword,
+    confirmPassword,
   });
   return data;
 };
