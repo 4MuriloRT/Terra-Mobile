@@ -1,8 +1,9 @@
 // App.tsx
 import React, { useEffect, useRef } from "react";
-import { StatusBar, View, StyleSheet, AppState, LogBox } from "react-native";
+import { StatusBar, StyleSheet, LogBox } from "react-native";
 import { NavigationContainer } from "@react-navigation/native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import NetInfo from "@react-native-community/netinfo";
 
 import Routes from "./src/routes";
@@ -39,19 +40,21 @@ export default function App() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={styles.container}>
-      <NavigationContainer>
-        <AuthProvider>
-          <StatusBar
-            backgroundColor={colors.primary}
-            barStyle="light-content"
-            translucent={false}
-          />
-          <OfflineBanner />
-          <Routes />
-        </AuthProvider>
-      </NavigationContainer>
-    </GestureHandlerRootView>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={styles.container}>
+        <NavigationContainer>
+          <AuthProvider>
+            <StatusBar
+              backgroundColor="#1a2e1a"
+              barStyle="light-content"
+              translucent={false}
+            />
+            <OfflineBanner />
+            <Routes />
+          </AuthProvider>
+        </NavigationContainer>
+      </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }
 

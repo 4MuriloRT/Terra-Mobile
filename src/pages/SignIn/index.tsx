@@ -65,7 +65,7 @@ export default function SignIn() {
         { id: String(data.id), nome: data.name || data.nome || email, email: data.email, role: data.role },
         data.accessToken
       );
-      navigation.navigate("DashboardScreen");
+      navigation.navigate("DashboardTabs");
     } catch (err: any) {
       const msg = parseError(err);
       const status = err?.response?.status;
