@@ -36,11 +36,17 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    const message =
-      error?.response?.data?.message ||
-      error?.message ||
-      "Erro de conexão com o servidor.";
-    return Promise.reject(new Error(Array.isArray(message) ? message.join(", ") : message));
+    const data = error?.response?.data;
+    let message = data?.message || error?.message || "Erro de conexão com o servidor.";
+    
+    // Se for erro do ValidationPipe, ele pode enviar um array 'details' ou uma string 'message' em forma de array
+    if (data?.details && Array.isArray(data.details)) {
+      message = data.details.join(", ");
+    } else if (Array.isArray(message)) {
+      message = message.join(", ");
+    }
+
+    return Promise.reject(new Error(message));
   }
 );
 
@@ -58,7 +64,7 @@ export const authRegister = async (registerData: {
   cpf?: string;
   telefone?: string;
   role?: string;
-  plano?: string;
+  idPlano?: number;
 }) => {
   const { data } = await api.post("/auth/register", registerData);
   return data;

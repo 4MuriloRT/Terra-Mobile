@@ -24,10 +24,9 @@ function parseError(err: any): string {
   return "Ocorreu um erro inesperado. Tente novamente.";
 }
 
-// ─── PLANOS ───────────────────────────────────────────────────────────────────
 const PLANOS = [
   {
-    id: "FREE",
+    id: 1,
     nome: "Free",
     preco: "Gratuito",
     icon: "leaf-outline" as const,
@@ -35,7 +34,7 @@ const PLANOS = [
     recursos: ["Gestão de fazendas", "Cadastro de cultivares", "Plantios básicos"],
   },
   {
-    id: "PRO",
+    id: 2,
     nome: "Pro",
     preco: "Para testes",
     icon: "star-outline" as const,
@@ -44,7 +43,7 @@ const PLANOS = [
     destaque: true,
   },
   {
-    id: "PREMIUM",
+    id: 3,
     nome: "Premium",
     preco: "Para testes",
     icon: "diamond-outline" as const,
@@ -72,7 +71,7 @@ export default function Register() {
   const [showPassword, setShowPassword]   = useState(false);
   const [showConfirm, setShowConfirm]     = useState(false);
   const [role, setRole]                   = useState("USER");
-  const [plano, setPlano]                 = useState("FREE");
+  const [plano, setPlano]                 = useState<number>(1);
   const [isLoading, setIsLoading]         = useState(false);
 
   // Erros inline por campo
@@ -128,8 +127,8 @@ export default function Register() {
         password,
         cpf: cpf.replace(/\D/g, "") || undefined,
         telefone: telefone.replace(/\D/g, "") || undefined,
-        role,
-        plano,
+        role: role === "AGRONOMO" ? "USER" : role, // O backend apenas aceita USER ou ADMIN
+        idPlano: plano,
       });
 
       Alert.alert(
